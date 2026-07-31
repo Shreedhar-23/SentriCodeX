@@ -1,0 +1,104 @@
+{
+  "name": "sentricodex",
+  "displayName": "SentriCodeX",
+  "description": "Local-first static security analysis for VS Code. Scan your code, find vulnerabilities, and get fix recommendations — without your source ever leaving your machine.",
+  "version": "0.1.0",
+  "publisher": "sentricodex",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Linters",
+    "Other"
+  ],
+  "keywords": [
+    "security",
+    "static analysis",
+    "vulnerability scanner",
+    "sast",
+    "code quality"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "sentricodex",
+          "title": "SentriCodeX",
+          "icon": "resources/activity-bar-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "sentricodex": [
+        {
+          "type": "webview",
+          "id": "sentricodex.sidebar",
+          "name": "SentriCodeX"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "sentricodex.scanCurrentFile",
+        "title": "SentriCodeX: Scan Current File",
+        "category": "SentriCodeX"
+      },
+      {
+        "command": "sentricodex.scanWorkspace",
+        "title": "SentriCodeX: Scan Workspace",
+        "category": "SentriCodeX"
+      },
+      {
+        "command": "sentricodex.generateReport",
+        "title": "SentriCodeX: Generate Report",
+        "category": "SentriCodeX"
+      },
+      {
+        "command": "sentricodex.viewHistory",
+        "title": "SentriCodeX: View Scan History",
+        "category": "SentriCodeX"
+      },
+      {
+        "command": "sentricodex.openSettings",
+        "title": "SentriCodeX: Open Settings",
+        "category": "SentriCodeX"
+      }
+    ],
+    "configuration": {
+      "title": "SentriCodeX",
+      "properties": {
+        "sentricodex.scanOnSave": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically rescan a file when it is saved. (Scanning engine arrives in a later phase.)"
+        },
+        "sentricodex.excludedFolders": {
+          "type": "array",
+          "default": [
+            "node_modules",
+            ".git",
+            "dist",
+            "out"
+          ],
+          "description": "Folders excluded from workspace scans."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.56.0",
+    "typescript": "^5.3.3"
+  }
+}
