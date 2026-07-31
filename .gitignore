@@ -1,0 +1,42 @@
+# ==== Node / TypeScript (extension/) ====
+node_modules/
+out/
+dist/
+*.vsix
+.vscode-test/
+npm-debug.log*
+
+# ==== Python (engine/, rules/) ====
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+env/
+.mypy_cache/
+.pytest_cache/
+*.egg-info/
+
+# ==== Editor / OS ====
+.vscode/
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
+*.swp
+
+# ==== Project-specific: never commit local user data ====
+storage/*.json
+!storage/.gitkeep
+reports/*.html
+reports/*.json
+reports/*.md
+!reports/.gitkeep
+*.log
+.env
+.env.local
+
+# ==== Coverage / build artifacts ====
+coverage/
+htmlcov/
+.coverage
+build/
