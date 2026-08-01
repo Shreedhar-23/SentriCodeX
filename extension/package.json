@@ -64,15 +64,25 @@
         "command": "sentricodex.openSettings",
         "title": "SentriCodeX: Open Settings",
         "category": "SentriCodeX"
+      },
+      {
+        "command": "sentricodex.showDashboard",
+        "title": "SentriCodeX: Show Dashboard",
+        "category": "SentriCodeX"
       }
     ],
     "configuration": {
       "title": "SentriCodeX",
       "properties": {
+        "sentricodex.pythonPath": {
+          "type": "string",
+          "default": "python",
+          "description": "Command or path used to invoke Python when running scans (e.g. 'python', 'python3', or an absolute path)."
+        },
         "sentricodex.scanOnSave": {
           "type": "boolean",
           "default": false,
-          "description": "Automatically rescan a file when it is saved. (Scanning engine arrives in a later phase.)"
+          "description": "Automatically rescan a file when it is saved. (Save-trigger wiring arrives in a later phase.)"
         },
         "sentricodex.excludedFolders": {
           "type": "array",
@@ -96,9 +106,9 @@
   "devDependencies": {
     "@types/node": "^20.11.0",
     "@types/vscode": "^1.85.0",
-    "@typescript-eslint/eslint-plugin": "^8.65.0",
-    "@typescript-eslint/parser": "^8.65.0",
-    "eslint": "^10.8.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.56.0",
     "typescript": "^5.3.3"
   }
 }

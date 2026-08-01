@@ -1,36 +1,61 @@
 import * as vscode from 'vscode';
 import { Logger } from '../utils/logger';
+import { ScannerBridge, ScannerBridgeError } from '../bridge/ScannerBridge';
+import { DashboardPanel } from '../dashboard/DashboardPanel';
 
 /**
- * Command: sentricodex.scanWorkspace
+ * Factory for the sentricodex.scanWorkspace command.
  *
- * Responsibility (this phase):
+ * Responsibility:
  *  - Validate that a workspace folder is open.
- *  - Log the scan request and inform the user of current capability.
- *
- * Responsibility (from Phase 3 onward):
- *  - Enumerate all supported files in the workspace, invoke the Python
- *    scanner bridge, aggregate findings, and update the dashboard.
+ *  - Run the real scan via the ScannerBridge against the workspace
+ *    root, with a progress notification (workspace scans can take
+ *    noticeably longer than a single file).
+ *  - On success, open/refresh the Dashboard with real results.
+ *  - On failure, surface a clear error message and log details.
  *
  * Input:  None (reads vscode.workspace.workspaceFolders)
- * Output: A VS Code notification confirming the request was received.
+ * Output: Opens the Dashboard panel with real scan results, or shows
+ *         an error notification.
  */
-export async function scanWorkspace(): Promise<void> {
-  const folders = vscode.workspace.workspaceFolders;
+export function createScanWorkspaceCommand(
+  context: vscode.ExtensionContext
+): () => Promise<void> {
+  return async function scanWorkspace(): Promise<void> {
+    const folders = vscode.workspace.workspaceFolders;
 
-  if (!folders || folders.length === 0) {
-    Logger.warn('Scan Workspace requested but no folder is open.');
-    void vscode.window.showWarningMessage(
-      'SentriCodeX: Open a folder or workspace before running a workspace scan.'
-    );
-    return;
-  }
+    if (!folders || folders.length === 0) {
+      Logger.warn('Scan Workspace requested but no folder is open.');
+      void vscode.window.showWarningMessage(
+        'SentriCodeX: Open a folder or workspace before running a workspace scan.'
+      );
+      return;
+    }
 
-  const folderNames = folders.map((f) => f.name).join(', ');
-  Logger.info(`Scan Workspace requested for folder(s): ${folderNames}`);
+    const workspacePath = folders[0].uri.fsPath;
+    Logger.info(`Scan Workspace requested for: ${workspacePath}`);
 
-  void vscode.window.showInformationMessage(
-    'SentriCodeX: Workspace scan request received. The security scanning ' +
-      'engine will be connected in a later development phase.'
-  );
+    const bridge = new ScannerBridge(context.extensionUri);
+
+    try {
+      const result = await vscode.window.withProgress(
+        {
+          location: vscode.ProgressLocation.Notification,
+          title: 'SentriCodeX: Scanning workspace...',
+          cancellable: false,
+        },
+        () => bridge.run(workspacePath)
+      );
+
+      Logger.info(
+        `Scan complete: ${result.files_scanned} file(s), ` +
+          `${result.summary.findings_count} finding(s), score ${result.security_score}.`
+      );
+      DashboardPanel.createOrShow(context.extensionUri, result);
+    } catch (err) {
+      const message = err instanceof ScannerBridgeError ? err.message : String(err);
+      Logger.error('Scan Workspace failed', err);
+      void vscode.window.showErrorMessage(`SentriCodeX: Scan failed. ${message}`);
+    }
+  };
 }

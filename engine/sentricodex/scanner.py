@@ -12,6 +12,7 @@ about the others.
 
 from __future__ import annotations
 
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -23,6 +24,7 @@ from sentricodex.normalizer import FindingNormalizer
 from sentricodex.parser import SourceParser
 from sentricodex.rule_executor import RuleExecutor
 from sentricodex.rule_loader import load_default_registry
+from sentricodex.scoring import calculate_security_score
 
 logger = get_logger()
 
@@ -48,6 +50,7 @@ class Scanner:
         """Runs a complete scan of the given file or directory and
         returns a ScanResult ready to be serialized to JSON.
         """
+        start_time = time.perf_counter()
         resolved_target = target.resolve()
         logger.info(f"Starting scan of: {resolved_target}")
 
@@ -68,6 +71,7 @@ class Scanner:
             )
 
         summary = self._build_summary(len(scanned_files), all_findings)
+        duration_ms = round((time.perf_counter() - start_time) * 1000)
 
         result = ScanResult(
             schema_version=_SCHEMA_VERSION,
@@ -76,11 +80,14 @@ class Scanner:
             files_scanned=len(scanned_files),
             findings=all_findings,
             summary=summary,
+            security_score=calculate_security_score(all_findings),
+            duration_ms=duration_ms,
         )
 
         logger.info(
             f"Scan complete: {len(scanned_files)} file(s) scanned, "
-            f"{len(all_findings)} finding(s)."
+            f"{len(all_findings)} finding(s), score {result.security_score}, "
+            f"{duration_ms}ms."
         )
         return result
 

@@ -149,7 +149,7 @@ class ScanSummary:
 @dataclass(frozen=True)
 class ScanResult:
     """The complete, top-level result of a scan — what the CLI prints as
-    JSON and what the future Scanner Bridge (extension side) will parse.
+    JSON and what the Scanner Bridge (extension side) parses.
     """
 
     schema_version: str
@@ -158,6 +158,8 @@ class ScanResult:
     files_scanned: int
     findings: list[Finding]
     summary: ScanSummary
+    security_score: int
+    duration_ms: int
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -167,4 +169,6 @@ class ScanResult:
             "files_scanned": self.files_scanned,
             "findings": [finding.to_dict() for finding in self.findings],
             "summary": self.summary.to_dict(),
+            "security_score": self.security_score,
+            "duration_ms": self.duration_ms,
         }
