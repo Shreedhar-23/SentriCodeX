@@ -1,0 +1,9 @@
+# SentriCodeX engine has zero runtime dependencies by design.
+#
+# It relies entirely on the Python standard library (pathlib, hashlib,
+# json, argparse, dataclasses, enum, logging). This keeps scans fast and
+# avoids introducing third-party supply-chain risk into a security tool.
+#
+# If a future phase (e.g. dependency vulnerability scanning) requires a
+# runtime dependency, it will be added here explicitly and justified in
+# CHANGELOG.md.
