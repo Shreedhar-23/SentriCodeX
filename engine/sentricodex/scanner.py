@@ -22,6 +22,7 @@ from sentricodex.models import Finding, ScanResult, ScanSummary, Severity
 from sentricodex.normalizer import FindingNormalizer
 from sentricodex.parser import SourceParser
 from sentricodex.rule_executor import RuleExecutor
+from sentricodex.rule_loader import load_default_registry
 
 logger = get_logger()
 
@@ -40,7 +41,7 @@ class Scanner:
     ) -> None:
         self._collector = collector or FileCollector()
         self._parser = parser or SourceParser()
-        self._executor = executor or RuleExecutor()
+        self._executor = executor or RuleExecutor(registry=load_default_registry())
         self._normalizer = normalizer or FindingNormalizer()
 
     def scan(self, target: Path) -> ScanResult:
