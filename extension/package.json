@@ -93,6 +93,12 @@
             "out"
           ],
           "description": "Folders excluded from workspace scans."
+        },
+        "sentricodex.defaultReportFormat": {
+          "type": "string",
+          "enum": ["html", "json", "markdown"],
+          "default": "html",
+          "description": "Pre-selected format when generating a report."
         }
       }
     }
@@ -101,14 +107,22 @@
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "lint": "eslint src --ext ts"
+    "lint": "eslint src --ext ts",
+    "pretest:unit": "tsc -p tsconfig.test.json",
+    "test:unit": "node --test out-test/test/unit/*.test.js",
+    "pretest:integration": "tsc -p tsconfig.test.json",
+    "test:integration": "node ./out-test/test/runTest.js",
+    "test": "npm run test:unit"
   },
   "devDependencies": {
+    "@types/mocha": "^10.0.6",
     "@types/node": "^20.11.0",
     "@types/vscode": "^1.85.0",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
+    "@vscode/test-electron": "^2.3.9",
     "eslint": "^8.56.0",
+    "mocha": "^10.3.0",
     "typescript": "^5.3.3"
   }
 }

@@ -3,6 +3,7 @@ import * as path from 'path';
 import { spawn } from 'child_process';
 import { Logger } from '../utils/logger';
 import { ScanResult } from '../models/scanResult';
+import { parseScanResult, extractErrorMessage } from './resultParser';
 
 /**
  * Thrown when the scan process itself could not be completed (bad
@@ -46,7 +47,7 @@ export class ScannerBridge {
     );
 
     if (exitCode !== 0) {
-      const message = this.extractErrorMessage(stderr) ?? `Scan process exited with code ${exitCode}.`;
+      const message = extractErrorMessage(stderr) ?? `Scan process exited with code ${exitCode}.`;
       throw new ScannerBridgeError(message);
     }
 
@@ -106,25 +107,9 @@ export class ScannerBridge {
     });
   }
 
-  private extractErrorMessage(stderr: string): string | null {
-    // The CLI prints structured errors as the last line of stderr, e.g.
-    // {"error": "Scan target does not exist: ..."}
-    const lines = stderr.trim().split('\n');
-    const lastLine = lines[lines.length - 1];
-    try {
-      const parsed: unknown = JSON.parse(lastLine);
-      if (parsed && typeof parsed === 'object' && 'error' in parsed) {
-        return String((parsed as { error: unknown }).error);
-      }
-    } catch {
-      // Not JSON - fall through and return the raw stderr instead.
-    }
-    return stderr.trim().length > 0 ? stderr.trim() : null;
-  }
-
   private parseResult(stdout: string): ScanResult {
     try {
-      return JSON.parse(stdout) as ScanResult;
+      return parseScanResult(stdout);
     } catch (err) {
       Logger.error('Failed to parse scan result JSON', err);
       throw new ScannerBridgeError(

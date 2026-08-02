@@ -31,7 +31,7 @@ Before submitting a PR, confirm:
 
 - [ ] Code is readable and follows project style
 - [ ] Security implications considered
-- [ ] Tests added/updated and passing
+- [ ] Tests added/updated and passing (see [docs/TESTING.md](docs/TESTING.md) for the full strategy and release checklist)
 - [ ] Documentation updated if behavior changed
 
 ## Getting Started
