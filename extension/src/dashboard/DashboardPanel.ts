@@ -1,15 +1,5 @@
 import * as vscode from 'vscode';
-import { ScanResult, Severity } from '../models/scanResult';
-
-const SEVERITY_ORDER: Severity[] = ['critical', 'high', 'medium', 'low', 'informational'];
-
-const SEVERITY_COLORS: Record<Severity, string> = {
-  critical: '#e51400',
-  high: '#f14c4c',
-  medium: '#e9a700',
-  low: '#3794ff',
-  informational: '#8a8a8a',
-};
+import { ScanResult } from '../models/scanResult';
 
 /**
  * The SentriCodeX Dashboard: a singleton WebviewPanel implementing the
@@ -201,8 +191,3 @@ function escapeHtml(value: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
-
-// Exported so dashboard.js's TypeScript-authored consumers (if any are
-// added later) can reuse the same severity ordering/color mapping
-// instead of duplicating it.
-export { SEVERITY_ORDER, SEVERITY_COLORS };
