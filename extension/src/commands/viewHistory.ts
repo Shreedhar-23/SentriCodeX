@@ -1,24 +1,21 @@
 import * as vscode from 'vscode';
 import { Logger } from '../utils/logger';
+import { HistoryManager } from '../storage/HistoryManager';
+import { HistoryPanel } from '../history/HistoryPanel';
 
 /**
- * Command: sentricodex.viewHistory
+ * Factory for the sentricodex.viewHistory command (FR-08).
  *
- * Responsibility (this phase):
- *  - Log the history request and inform the user of current capability.
- *
- * Responsibility (from Phase 6 onward):
- *  - Read local scan history from storage/ and display it in the
- *    History screen defined in the UI/UX specification.
- *
- * Input:  None
- * Output: A VS Code notification confirming the request was received.
+ * Responsibility:
+ *  - Open (or refresh) the History panel, backed by the shared
+ *    HistoryManager instance created once at activation.
  */
-export async function viewHistory(): Promise<void> {
-  Logger.info('View History requested.');
-
-  void vscode.window.showInformationMessage(
-    'SentriCodeX: Scan history will be available once local scan storage ' +
-      'is implemented in a later phase.'
-  );
+export function createViewHistoryCommand(
+  context: vscode.ExtensionContext,
+  historyManager: HistoryManager
+): () => Promise<void> {
+  return async function viewHistory(): Promise<void> {
+    Logger.info('Opening scan history.');
+    await HistoryPanel.createOrShow(context.extensionUri, historyManager);
+  };
 }

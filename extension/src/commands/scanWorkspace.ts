@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 import { Logger } from '../utils/logger';
 import { ScannerBridge, ScannerBridgeError } from '../bridge/ScannerBridge';
 import { DashboardPanel } from '../dashboard/DashboardPanel';
+import { HistoryManager } from '../storage/HistoryManager';
+import { setLatestScanResult } from '../state/ScanResultStore';
 
 /**
  * Factory for the sentricodex.scanWorkspace command.
@@ -11,7 +13,8 @@ import { DashboardPanel } from '../dashboard/DashboardPanel';
  *  - Run the real scan via the ScannerBridge against the workspace
  *    root, with a progress notification (workspace scans can take
  *    noticeably longer than a single file).
- *  - On success, open/refresh the Dashboard with real results.
+ *  - On success: store the result for Report generation, record it to
+ *    History, and open/refresh the Dashboard with real results.
  *  - On failure, surface a clear error message and log details.
  *
  * Input:  None (reads vscode.workspace.workspaceFolders)
@@ -19,7 +22,8 @@ import { DashboardPanel } from '../dashboard/DashboardPanel';
  *         an error notification.
  */
 export function createScanWorkspaceCommand(
-  context: vscode.ExtensionContext
+  context: vscode.ExtensionContext,
+  historyManager: HistoryManager
 ): () => Promise<void> {
   return async function scanWorkspace(): Promise<void> {
     const folders = vscode.workspace.workspaceFolders;
@@ -51,6 +55,9 @@ export function createScanWorkspaceCommand(
         `Scan complete: ${result.files_scanned} file(s), ` +
           `${result.summary.findings_count} finding(s), score ${result.security_score}.`
       );
+
+      setLatestScanResult(result);
+      await historyManager.recordScan(result);
       DashboardPanel.createOrShow(context.extensionUri, result);
     } catch (err) {
       const message = err instanceof ScannerBridgeError ? err.message : String(err);

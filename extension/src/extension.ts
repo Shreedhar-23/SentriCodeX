@@ -2,12 +2,15 @@ import * as vscode from 'vscode';
 import { Logger } from './utils/logger';
 import { registerCommands } from './commands';
 import { SidebarProvider } from './sidebar/SidebarProvider';
+import { HistoryManager } from './storage/HistoryManager';
 
 /**
  * Called by VS Code when the extension activates.
  *
  * Responsibility:
  *  - Initialize centralized logging.
+ *  - Construct the shared HistoryManager (one instance for the whole
+ *    session, avoiding concurrent writers to the same history file).
  *  - Register all SentriCodeX commands.
  *  - Register the sidebar webview provider.
  *
@@ -19,7 +22,9 @@ export function activate(context: vscode.ExtensionContext): void {
   Logger.initialize(context);
   Logger.info('SentriCodeX extension activating...');
 
-  registerCommands(context);
+  const historyManager = new HistoryManager(context);
+
+  registerCommands(context, historyManager);
 
   const sidebarProvider = new SidebarProvider(context.extensionUri);
   context.subscriptions.push(
