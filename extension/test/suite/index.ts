@@ -8,7 +8,7 @@ import Mocha from 'mocha';
  * from *.test.ts) and runs them with Mocha.
  */
 export function run(): Promise<void> {
-  const mocha = new Mocha({ ui: 'bdd', color: true, timeout: 20000 });
+  const mocha = new Mocha({ ui: 'tdd', color: true, timeout: 20000 });
   const testsRoot = path.resolve(__dirname);
 
   return new Promise((resolve, reject) => {
