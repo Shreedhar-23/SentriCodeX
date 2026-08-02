@@ -8,6 +8,7 @@ malformed file from aborting an entire scan.
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
 
 import pytest
@@ -47,9 +48,12 @@ def test_raises_scanner_error_for_nonexistent_file() -> None:
 
 
 @pytest.mark.skipif(
-    hasattr(os, "geteuid") and os.geteuid() == 0,
-    reason="Permission bits are bypassed when running as root (e.g. in a "
-    "container); this test is only meaningful as a non-root user.",
+    sys.platform.startswith("win") or (hasattr(os, "geteuid") and os.geteuid() == 0),
+    reason="File permission bits do not reliably block reads on Windows "
+    "(os.chmod there only toggles a read-only attribute), and are "
+    "bypassed entirely when running as root on POSIX systems (e.g. in "
+    "a container). This test is only meaningful as a non-root user on "
+    "a POSIX system (Linux/macOS).",
 )
 def test_raises_scanner_error_for_unreadable_file(tmp_path: Path) -> None:
     file_path = tmp_path / "locked.py"
