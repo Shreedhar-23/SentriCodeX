@@ -2,13 +2,6 @@
   const data = window.__SENTRICODEX_DATA__;
 
   const SEVERITY_ORDER = ['critical', 'high', 'medium', 'low', 'informational'];
-  const SEVERITY_COLORS = {
-    critical: '#e51400',
-    high: '#f14c4c',
-    medium: '#e9a700',
-    low: '#3794ff',
-    informational: '#8a8a8a',
-  };
 
   let sortColumn = 'severity';
   let sortDirection = 'asc';
@@ -41,13 +34,13 @@
   function applyScoreColor() {
     const ring = document.querySelector('.score-ring');
     const score = data.security_score;
-    let color = '#89d185'; // green
+    let statusClass = 'score-good';
     if (score < 50) {
-      color = '#e51400'; // red
+      statusClass = 'score-poor';
     } else if (score < 80) {
-      color = '#e9a700'; // amber
+      statusClass = 'score-medium';
     }
-    ring.style.setProperty('--score-color', color);
+    ring.classList.add(statusClass);
   }
 
   function renderSeverityCards() {
@@ -56,9 +49,8 @@
 
     container.innerHTML = SEVERITY_ORDER.map((severity) => {
       const count = breakdown[severity] || 0;
-      const color = SEVERITY_COLORS[severity];
       return (
-        '<div class="severity-card" style="--card-color: ' + color + '">' +
+        '<div class="severity-card severity-' + severity + '">' +
         '<div class="count">' + count + '</div>' +
         '<div class="label">' + severity + '</div>' +
         '</div>'
@@ -73,17 +65,27 @@
 
     container.innerHTML = SEVERITY_ORDER.map((severity) => {
       const count = breakdown[severity] || 0;
-      const widthPercent = Math.round((count / maxCount) * 100);
-      const color = SEVERITY_COLORS[severity];
       return (
         '<div class="bar-row">' +
         '<span class="bar-label">' + severity + '</span>' +
-        '<div class="bar-track"><div class="bar-fill" style="width: ' +
-        widthPercent + '%; background-color: ' + color + '"></div></div>' +
+        '<div class="bar-track"><div class="bar-fill severity-' + severity +
+        '" data-severity="' + severity + '"></div></div>' +
         '<span class="bar-count">' + count + '</span>' +
         '</div>'
       );
     }).join('');
+
+    // Width is dynamic (varies per scan), so it's set via the CSSOM here
+    // rather than embedded as an inline style string above. The webview's
+    // Content-Security-Policy blocks inline style="" attributes inserted
+    // via innerHTML, but direct element.style assignment via JavaScript
+    // is unaffected by that policy.
+    container.querySelectorAll('.bar-fill').forEach((el) => {
+      const severity = el.getAttribute('data-severity');
+      const count = breakdown[severity] || 0;
+      const widthPercent = Math.round((count / maxCount) * 100);
+      el.style.width = widthPercent + '%';
+    });
   }
 
   function renderRecommendations() {
@@ -137,10 +139,9 @@
 
     tbody.innerHTML = filtered
       .map((finding) => {
-        const color = SEVERITY_COLORS[finding.severity];
         return (
           '<tr>' +
-          '<td><span class="severity-badge" style="background-color: ' + color + '">' +
+          '<td><span class="severity-badge severity-' + finding.severity + '">' +
           finding.severity + '</span></td>' +
           '<td>' + escapeHtml(finding.rule_id) + '</td>' +
           '<td>' + escapeHtml(shortenPath(finding.file)) + '</td>' +
