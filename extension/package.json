@@ -5,6 +5,10 @@
   "version": "0.1.0",
   "publisher": "sentricodex",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sentricodex/sentricodex.git"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -104,10 +108,12 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
+    "vscode:prepublish": "npm run compile && npm run bundle:engine",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "lint": "eslint src --ext ts",
+    "bundle:engine": "node scripts/bundle-engine.js",
+    "package": "vsce package",
     "pretest:unit": "tsc -p tsconfig.test.json",
     "test:unit": "node --test out-test/test/unit/*.test.js",
     "pretest:integration": "tsc -p tsconfig.test.json",
@@ -121,6 +127,7 @@
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
     "@vscode/test-electron": "^2.3.9",
+    "@vscode/vsce": "^2.24.0",
     "eslint": "^8.56.0",
     "mocha": "^10.3.0",
     "typescript": "^5.3.3"

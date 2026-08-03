@@ -4,6 +4,7 @@ out/
 out-test/
 dist/
 *.vsix
+extension/bundled/
 .vscode-test/
 npm-debug.log*
 

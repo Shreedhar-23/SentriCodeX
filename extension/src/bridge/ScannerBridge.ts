@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import * as fs from 'fs';
 import { spawn } from 'child_process';
 import { Logger } from '../utils/logger';
 import { ScanResult } from '../models/scanResult';
@@ -60,14 +61,36 @@ export class ScannerBridge {
   }
 
   /**
-   * Locates the engine/ folder as a sibling of the extension's install
-   * directory. This is correct for local development (F5) and this
-   * repository's layout. Packaging the engine alongside a published
-   * VSIX is an explicitly open question deferred to the Packaging
-   * phase - not addressed here.
+   * Locates the Python engine directory, trying two locations in order:
+   *
+   *   1. extension/bundled/engine - present when SentriCodeX was
+   *      installed from a packaged .vsix (see scripts/bundle-engine.js,
+   *      which copies engine/ and rules/ here before packaging).
+   *   2. ../engine, as a sibling of the extension's install directory
+   *      - correct for local development via F5, where bundled/ was
+   *      never generated.
+   *
+   * Throws ScannerBridgeError if neither location exists, so failures
+   * are reported clearly rather than surfacing as a confusing "Python
+   * module not found" error from deep inside the spawned process.
    */
   private resolveEngineDirectory(): string {
-    return path.join(this.extensionUri.fsPath, '..', 'engine');
+    const bundledPath = path.join(this.extensionUri.fsPath, 'bundled', 'engine');
+    if (fs.existsSync(bundledPath)) {
+      Logger.info(`Using bundled engine at: ${bundledPath}`);
+      return bundledPath;
+    }
+
+    const devPath = path.join(this.extensionUri.fsPath, '..', 'engine');
+    if (fs.existsSync(devPath)) {
+      Logger.info(`Using development engine at: ${devPath}`);
+      return devPath;
+    }
+
+    throw new ScannerBridgeError(
+      'Could not locate the SentriCodeX Python engine (checked both the ' +
+        'bundled and development locations). This installation may be corrupted.'
+    );
   }
 
   private spawnProcess(
