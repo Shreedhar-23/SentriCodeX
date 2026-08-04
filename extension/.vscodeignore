@@ -1,9 +1,16 @@
 .vscode/**
 .vscode-test/**
 src/**
+test/**
+scripts/**
+out-test/**
 .eslintrc.json
 .prettierrc.json
 tsconfig.json
+tsconfig.test.json
 **/*.map
 **/.gitignore
 node_modules/**
+bundled/**/__pycache__/**
+bundled/**/*.pyc
+bundled/engine/requirements-dev.txt
