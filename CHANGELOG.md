@@ -7,6 +7,13 @@ project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-08-04
+
+Initial stable release. Local-first static security analysis for VS
+Code, with 13 built-in security rules, an interactive Dashboard,
+HTML/JSON/Markdown report export, persistent scan history, and a fully
+packaged, installable extension.
+
 ### Added
 - Phase 1: Project repository structure, documentation skeleton,
   `.gitignore`, license, and planning artifacts.
@@ -26,4 +33,6 @@ project adheres to [Semantic Versioning](https://semver.org/).
   packaged extension via `scripts/bundle-engine.js`, with the Scanner
   Bridge resolving bundled vs. development engine locations
   automatically. GitHub issue templates added.
+- Phase 9: Marketplace assets — 128x128 icon, gallery banner, expanded
+  keywords, and publishing documentation.
 

@@ -2,13 +2,22 @@
   "name": "sentricodex",
   "displayName": "SentriCodeX",
   "description": "Local-first static security analysis for VS Code. Scan your code, find vulnerabilities, and get fix recommendations — without your source ever leaving your machine.",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "publisher": "sentricodex",
   "license": "MIT",
+  "icon": "resources/icon.png",
+  "galleryBanner": {
+    "color": "#141e30",
+    "theme": "dark"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/sentricodex/sentricodex.git"
   },
+  "bugs": {
+    "url": "https://github.com/sentricodex/sentricodex/issues"
+  },
+  "homepage": "https://github.com/sentricodex/sentricodex#readme",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -21,7 +30,12 @@
     "static analysis",
     "vulnerability scanner",
     "sast",
-    "code quality"
+    "code quality",
+    "secrets detection",
+    "sql injection",
+    "xss",
+    "security linter",
+    "owasp"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -100,11 +114,7 @@
         },
         "sentricodex.defaultReportFormat": {
           "type": "string",
-          "enum": [
-            "html",
-            "json",
-            "markdown"
-          ],
+          "enum": ["html", "json", "markdown"],
           "default": "html",
           "description": "Pre-selected format when generating a report."
         }
@@ -135,8 +145,5 @@
     "eslint": "^8.56.0",
     "mocha": "^10.3.0",
     "typescript": "^5.3.3"
-  },
-  "allowScripts": {
-    "keytar@7.9.0": true
   }
 }

@@ -104,6 +104,10 @@ npm run test:integration     # TypeScript: real VS Code instance
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
 
+## Publishing
+
+See [docs/PUBLISHING.md](docs/PUBLISHING.md) for the Marketplace publishing process.
+
 ## Security
 
 See [SECURITY.md](SECURITY.md) for our vulnerability disclosure policy.
