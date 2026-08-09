@@ -1,0 +1,10 @@
+{
+  "extraPaths": ["engine"],
+  "include": ["engine", "rules", "tests"],
+  "exclude": [
+    "**/__pycache__",
+    "**/node_modules",
+    "extension",
+    ".vscode-test"
+  ]
+}
