@@ -51,7 +51,7 @@ body {
   background-color: var(--vscode-button-hoverBackground);
 }
 
-.opensettings-button {
+.sc-button-secondary {
     position: fixed;
     bottom: 12px;
     right: 12px;
@@ -73,6 +73,6 @@ body {
     font-size: 16px;
 }
 
-.opensettings-button:hover {
+.sc-button-secondary:hover {
     background: var(--vscode-toolbar-hoverBackground);
 }
