@@ -61,7 +61,7 @@ body {
   outline: 1px solid var(--vscode-focusBorder);
   outline-offset: 2px;
 }
-.sc-button sc-button-secondary {
+.opensettings-button {
     position: fixed;
     bottom: 12px;
     right: 12px;
@@ -83,6 +83,6 @@ body {
     font-size: 16px;
 }
 
-.sc-button sc-button-secondary:hover {
+.opensettings-button:hover {
     background: var(--vscode-toolbar-hoverBackground);
 }
