@@ -90,7 +90,6 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
 <body>
   <div class="sentricodex-sidebar">
     <h2>SentriCodeX</h2>
-    <p class="subtitle">Local-first security scanning</p>
 
     <button id="scanCurrentFile" class="sc-button sc-button-primary">
       Scan Current File
