@@ -6,7 +6,7 @@ ready-to-use Rule instances) from here and registers each one - adding
 a new rule means adding one import and one instance to this list, with
 zero changes required anywhere in engine/.
 """
-
+from rules.unsafe_apis.pickle_deserialization import PickleDeserializationRule
 from rules.best_practices.security_todo_comment import SecurityTodoCommentRule
 from rules.configuration.debug_mode_enabled import DebugModeEnabledRule
 from rules.cryptography.insecure_randomness import InsecureRandomnessRule
@@ -32,6 +32,7 @@ ALL_RULES: list[Rule] = [
     CommandInjectionRule(),
     CrossSiteScriptingRule(),
     # Unsafe APIs
+    PickleDeserializationRule(),
     PythonEvalExecRule(),
     JavaScriptEvalRule(),
     ShellTrueRule(),
