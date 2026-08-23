@@ -1,8 +1,6 @@
 (function () {
   const data = window.__SENTRICODEX_DATA__;
-
   const SEVERITY_ORDER = ['critical', 'high', 'medium', 'low', 'informational'];
-
   let sortColumn = 'severity';
   let sortDirection = 'asc';
 
@@ -46,7 +44,6 @@
   function renderSeverityCards() {
     const container = document.getElementById('severityCards');
     const breakdown = data.summary.severity_breakdown;
-
     container.innerHTML = SEVERITY_ORDER.map((severity) => {
       const count = breakdown[severity] || 0;
       return (
@@ -75,11 +72,6 @@
       );
     }).join('');
 
-    // Width is dynamic (varies per scan), so it's set via the CSSOM here
-    // rather than embedded as an inline style string above. The webview's
-    // Content-Security-Policy blocks inline style="" attributes inserted
-    // via innerHTML, but direct element.style assignment via JavaScript
-    // is unaffected by that policy.
     container.querySelectorAll('.bar-fill').forEach((el) => {
       const severity = el.getAttribute('data-severity');
       const count = breakdown[severity] || 0;
@@ -96,9 +88,7 @@
       counts.set(finding.recommendation, (counts.get(finding.recommendation) || 0) + 1);
     });
 
-    const top = Array.from(counts.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3);
+    const top = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]).slice(0, 3);
 
     if (top.length === 0) {
       list.innerHTML = '<li>No findings — nothing to recommend right now.</li>';

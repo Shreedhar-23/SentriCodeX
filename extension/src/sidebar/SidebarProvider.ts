@@ -1,29 +1,19 @@
 import * as vscode from 'vscode';
 import { Logger } from '../utils/logger';
 
-/**
- * Message shape sent FROM the sidebar webview TO the extension host
- * when a user clicks a button.
- */
 interface SidebarMessage {
   command: string;
 }
 
 /**
- * Provides the SentriCodeX sidebar webview (Activity Bar → Sidebar).
+ * Provides the SentriCodeX sidebar webview (Activity Bar -> Sidebar).
  *
- * Responsibility:
- *  - Render the sidebar's HTML/CSS/JS (buttons: Scan Current File, Scan
- *    Workspace, Generate Report, View History, Settings), matching the
- *    UI/UX specification's Sidebar section.
- *  - Receive button-click messages from the webview and dispatch them
- *    to the corresponding registered VS Code command.
- *  - Apply a strict Content-Security-Policy so the webview can only run
- *    scripts and load styles that ship with the extension itself.
- *
- * This class deliberately contains NO scanning or business logic — it
- * only renders UI and forwards user intent to commands, in line with
- * the single-responsibility principle from the architecture spec.
+ * "Generate Report" was removed from here: every completed scan is
+ * now automatically recorded to History (with its full findings), so
+ * downloading a report for the most recent scan is just "open History,
+ * use the ... menu on the top row" - no separate action needed for
+ * the common case, and the History-based flow additionally supports
+ * downloading a report for *any* past scan, not only the latest one.
  */
 export class SidebarProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'sentricodex.sidebar';
@@ -41,20 +31,12 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     webviewView.webview.onDidReceiveMessage((message: SidebarMessage) => {
       this.handleMessage(message);
     });
-
-    // Keep the webview's DOM state when the user switches to a different
-    // sidebar/tab and back, instead of reloading from scratch every time.
-    webviewView.webview.options = {
-      ...webviewView.webview.options,
-      enableScripts: true,
-    };
   }
 
   private handleMessage(message: SidebarMessage): void {
     const knownCommands = new Set([
       'sentricodex.scanCurrentFile',
       'sentricodex.scanWorkspace',
-      'sentricodex.generateReport',
       'sentricodex.viewHistory',
       'sentricodex.openSettings',
     ]);
@@ -90,6 +72,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
 <body>
   <div class="sentricodex-sidebar">
     <h2>SentriCodeX</h2>
+    <p class="subtitle">Local-first security scanning</p>
 
     <button id="scanCurrentFile" class="sc-button sc-button-primary">
       Scan Current File
@@ -97,14 +80,11 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     <button id="scanWorkspace" class="sc-button">
       Scan Workspace
     </button>
-    <button id="generateReport" class="sc-button">
-      Generate Report
-    </button>
     <button id="viewHistory" class="sc-button">
       View History
     </button>
     <button id="openSettings" class="sc-button sc-button-secondary">
-      ⚙
+      Settings
     </button>
   </div>
   <script nonce="${nonce}" src="${jsUri}"></script>
@@ -113,10 +93,6 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
   }
 }
 
-/**
- * Generates a random nonce used by the Content-Security-Policy to allow
- * only our own inline script tag to execute.
- */
 function getNonce(): string {
   const chars =
     'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';

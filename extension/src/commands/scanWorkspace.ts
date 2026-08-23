@@ -3,23 +3,12 @@ import { Logger } from '../utils/logger';
 import { ScannerBridge, ScannerBridgeError } from '../bridge/ScannerBridge';
 import { DashboardPanel } from '../dashboard/DashboardPanel';
 import { HistoryManager } from '../storage/HistoryManager';
-import { setLatestScanResult } from '../state/ScanResultStore';
 
 /**
  * Factory for the sentricodex.scanWorkspace command.
  *
- * Responsibility:
- *  - Validate that a workspace folder is open.
- *  - Run the real scan via the ScannerBridge against the workspace
- *    root, with a progress notification (workspace scans can take
- *    noticeably longer than a single file).
- *  - On success: store the result for Report generation, record it to
- *    History, and open/refresh the Dashboard with real results.
- *  - On failure, surface a clear error message and log details.
- *
- * Input:  None (reads vscode.workspace.workspaceFolders)
- * Output: Opens the Dashboard panel with real scan results, or shows
- *         an error notification.
+ * On success: records the full result to History and opens/refreshes
+ * the Dashboard.
  */
 export function createScanWorkspaceCommand(
   context: vscode.ExtensionContext,
@@ -56,7 +45,6 @@ export function createScanWorkspaceCommand(
           `${result.summary.findings_count} finding(s), score ${result.security_score}.`
       );
 
-      setLatestScanResult(result);
       await historyManager.recordScan(result);
       DashboardPanel.createOrShow(context.extensionUri, result);
     } catch (err) {

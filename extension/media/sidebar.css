@@ -52,27 +52,12 @@ body {
 }
 
 .sc-button-secondary {
-    position: fixed;
-    bottom: 12px;
-    right: 12px;
-
-    width: 32px;
-    height: 32px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    border: none;
-    border-radius: 6px;
-
-    background: transparent;
-    color: var(--vscode-foreground);
-
-    cursor: pointer;
-    font-size: 16px;
+  margin-top: 8px;
+  border-top: 1px solid var(--vscode-widget-border, transparent);
+  padding-top: 12px;
 }
 
-.sc-button-secondary:hover {
-    background: var(--vscode-toolbar-hoverBackground);
+.sc-button:focus {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 2px;
 }

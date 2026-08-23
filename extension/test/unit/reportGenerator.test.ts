@@ -39,7 +39,6 @@ describe('ReportGenerator.toJson', () => {
   test('produces valid, parseable JSON matching the input data', () => {
     const result = makeResult();
     const json = ReportGenerator.toJson(result);
-
     const parsed = JSON.parse(json);
     assert.equal(parsed.security_score, 75);
     assert.equal(parsed.findings.length, 1);
@@ -50,14 +49,12 @@ describe('ReportGenerator.toJson', () => {
 describe('ReportGenerator.toMarkdown', () => {
   test('includes the security score and target', () => {
     const md = ReportGenerator.toMarkdown(makeResult());
-
     assert.match(md, /Security Score:\*\* 75\/100/);
     assert.match(md, /\/home\/user\/project/);
   });
 
   test('includes a findings table row for each finding', () => {
     const md = ReportGenerator.toMarkdown(makeResult());
-
     assert.match(md, /SCX-SECRET-001/);
     assert.match(md, /A password appears to be hardcoded/);
   });
@@ -72,9 +69,7 @@ describe('ReportGenerator.toMarkdown', () => {
       },
       security_score: 100,
     });
-
     const md = ReportGenerator.toMarkdown(clean);
-
     assert.match(md, /No findings\. Great work!/);
   });
 
@@ -96,9 +91,7 @@ describe('ReportGenerator.toMarkdown', () => {
         },
       ],
     });
-
     const md = ReportGenerator.toMarkdown(withPipe);
-
     assert.match(md, /Contains a \\\| pipe character/);
   });
 });
@@ -106,14 +99,12 @@ describe('ReportGenerator.toMarkdown', () => {
 describe('ReportGenerator.toHtml', () => {
   test('produces a complete HTML document', () => {
     const html = ReportGenerator.toHtml(makeResult());
-
     assert.match(html, /<!DOCTYPE html>/);
     assert.match(html, /<\/html>/);
   });
 
   test('includes the correct severity badge class for each finding', () => {
     const html = ReportGenerator.toHtml(makeResult());
-
     assert.match(html, /badge-critical/);
   });
 
@@ -135,9 +126,7 @@ describe('ReportGenerator.toHtml', () => {
         },
       ],
     });
-
     const html = ReportGenerator.toHtml(malicious);
-
     assert.ok(!html.includes('<script>alert("xss")</script>'));
     assert.match(html, /&lt;script&gt;/);
   });
@@ -151,9 +140,7 @@ describe('ReportGenerator.toHtml', () => {
         severity_breakdown: { critical: 0, high: 0, medium: 0, low: 0, informational: 0 },
       },
     });
-
     const html = ReportGenerator.toHtml(clean);
-
     assert.match(html, /No findings\. Great work!/);
   });
 });

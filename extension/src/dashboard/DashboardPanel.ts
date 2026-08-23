@@ -1,16 +1,6 @@
 import * as vscode from 'vscode';
 import { ScanResult } from '../models/scanResult';
 
-/**
- * The SentriCodeX Dashboard: a singleton WebviewPanel implementing the
- * Dashboard screen from the UI/UX specification (PDF 3, Section 5) -
- * Security Score, severity cards, a severity chart, scan metadata, and
- * a searchable/sortable/filterable findings table (Section 6).
- *
- * Singleton pattern: createOrShow() reveals the existing panel instead
- * of creating a new tab on every scan, matching standard VS Code
- * extension conventions for a single "main destination" webview.
- */
 export class DashboardPanel {
   public static currentPanel: DashboardPanel | undefined;
   private static readonly viewType = 'sentricodex.dashboard';
@@ -42,11 +32,6 @@ export class DashboardPanel {
     DashboardPanel.currentPanel = new DashboardPanel(panel, extensionUri, result);
   }
 
-  /**
-   * Reveals the panel without changing its content - used by the
-   * "Show Dashboard" command to bring an already-populated dashboard
-   * back into focus.
-   */
   public reveal(): void {
     this.panel.reveal();
   }

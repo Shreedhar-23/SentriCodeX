@@ -6,35 +6,11 @@ import { Logger } from '../utils/logger';
 import { ScanResult } from '../models/scanResult';
 import { parseScanResult, extractErrorMessage } from './resultParser';
 
-/**
- * Thrown when the scan process itself could not be completed (bad
- * Python interpreter, engine crashed, malformed output) - distinct
- * from a scan that completed successfully but simply found issues.
- */
 export class ScannerBridgeError extends Error {}
 
-/**
- * The Scanner Bridge: the sole connection point between the VS Code
- * extension and the Python scanning engine, per the architecture
- * specification's "Bridge Layer - Launch Python scanner and exchange
- * data" responsibility.
- *
- * Deliberately spawns with shell: false and an explicit argument array
- * (never a shell string) - the same discipline SentriCodeX's own
- * ShellTrueRule and CommandInjectionRule flag as required elsewhere.
- */
 export class ScannerBridge {
   constructor(private readonly extensionUri: vscode.Uri) {}
 
-  /**
-   * Runs a scan of the given target path and returns the parsed result.
-   *
-   * Input:  absolute path to a file or directory to scan
-   * Output: a fully parsed ScanResult
-   * Throws: ScannerBridgeError if the process fails to start, exits
-   *         non-zero, or produces output that cannot be parsed as the
-   *         expected JSON schema.
-   */
   public async run(targetPath: string): Promise<ScanResult> {
     const pythonPath = this.getConfiguredPythonPath();
     const engineDir = this.resolveEngineDirectory();
@@ -60,20 +36,6 @@ export class ScannerBridge {
     return config.get<string>('pythonPath', 'python');
   }
 
-  /**
-   * Locates the Python engine directory, trying two locations in order:
-   *
-   *   1. extension/bundled/engine - present when SentriCodeX was
-   *      installed from a packaged .vsix (see scripts/bundle-engine.js,
-   *      which copies engine/ and rules/ here before packaging).
-   *   2. ../engine, as a sibling of the extension's install directory
-   *      - correct for local development via F5, where bundled/ was
-   *      never generated.
-   *
-   * Throws ScannerBridgeError if neither location exists, so failures
-   * are reported clearly rather than surfacing as a confusing "Python
-   * module not found" error from deep inside the spawned process.
-   */
   private resolveEngineDirectory(): string {
     const bundledPath = path.join(this.extensionUri.fsPath, 'bundled', 'engine');
     if (fs.existsSync(bundledPath)) {

@@ -18,7 +18,13 @@ h1 {
   margin: 0;
 }
 
-.clear-button {
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.clear-button,
+.compare-button {
   appearance: none;
   border: 1px solid var(--vscode-button-border, transparent);
   border-radius: 4px;
@@ -30,8 +36,19 @@ h1 {
   color: var(--vscode-button-secondaryForeground);
 }
 
-.clear-button:hover {
+.clear-button:hover,
+.compare-button:not(:disabled):hover {
   background-color: var(--vscode-button-secondaryHoverBackground);
+}
+
+.compare-button:not(:disabled) {
+  background-color: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+}
+
+.compare-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .history-table {
@@ -49,6 +66,12 @@ h1 {
   user-select: none;
 }
 
+.history-table th.checkbox-col,
+.history-table th.menu-col {
+  cursor: default;
+  width: 32px;
+}
+
 .history-table th:hover {
   color: var(--vscode-foreground);
 }
@@ -57,6 +80,10 @@ h1 {
   padding: 8px;
   border-bottom: 1px solid var(--vscode-widget-border, #2a2a2a);
   font-family: var(--vscode-editor-font-family, monospace);
+}
+
+.history-table tr.row-selected {
+  background-color: var(--vscode-list-inactiveSelectionBackground);
 }
 
 .score-good { color: #89d185; font-weight: 600; }
@@ -68,4 +95,59 @@ h1 {
   padding: 32px;
   color: var(--vscode-descriptionForeground);
   font-size: 13px;
+}
+
+/* Row action menu ("...") */
+.row-menu-wrapper {
+  position: relative;
+}
+
+.row-menu-trigger {
+  appearance: none;
+  background: none;
+  border: none;
+  color: var(--vscode-foreground);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.row-menu-trigger:hover {
+  background-color: var(--vscode-toolbar-hoverBackground, rgba(255, 255, 255, 0.1));
+}
+
+.row-menu-dropdown {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  z-index: 10;
+  background-color: var(--vscode-menu-background, var(--vscode-editor-background));
+  border: 1px solid var(--vscode-widget-border, #444);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  min-width: 150px;
+}
+
+.row-menu-dropdown[hidden] {
+  display: none;
+}
+
+.row-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  appearance: none;
+  background: none;
+  border: none;
+  color: var(--vscode-menu-foreground, var(--vscode-foreground));
+  font-family: inherit;
+  font-size: 13px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.row-menu-item:hover {
+  background-color: var(--vscode-menu-selectionBackground, var(--vscode-list-hoverBackground));
 }

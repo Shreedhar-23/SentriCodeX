@@ -38,17 +38,13 @@ describe('parseScanResult', () => {
 describe('extractErrorMessage', () => {
   test('extracts the error field from structured JSON stderr', () => {
     const stderr = '[2026-08-01T00:00:00] [ERROR] Scan failed\n{"error": "Scan target does not exist: /bad/path"}';
-
     const message = extractErrorMessage(stderr);
-
     assert.equal(message, 'Scan target does not exist: /bad/path');
   });
 
   test('falls back to raw stderr text when last line is not JSON', () => {
     const stderr = 'Traceback (most recent call last):\n  File "cli.py", line 1\nSyntaxError: invalid syntax';
-
     const message = extractErrorMessage(stderr);
-
     assert.equal(message, stderr.trim());
   });
 
@@ -59,9 +55,7 @@ describe('extractErrorMessage', () => {
 
   test('handles single-line structured error with no preceding log lines', () => {
     const stderr = '{"error": "Unable to read file: /locked/file.py"}';
-
     const message = extractErrorMessage(stderr);
-
     assert.equal(message, 'Unable to read file: /locked/file.py');
   });
 });

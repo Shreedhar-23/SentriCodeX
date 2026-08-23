@@ -1,0 +1,146 @@
+body {
+  margin: 0;
+  padding: 24px;
+  font-family: var(--vscode-font-family);
+  color: var(--vscode-foreground);
+  background-color: var(--vscode-editor-background);
+}
+
+h1 {
+  font-size: 20px;
+  margin: 0 0 20px 0;
+}
+
+h2 {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--vscode-descriptionForeground);
+  margin: 28px 0 4px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-hint {
+  margin: 0 0 10px 0;
+  font-size: 12px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.score-comparison {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 16px;
+  border: 1px solid var(--vscode-widget-border, #444);
+  border-radius: 6px;
+}
+
+.score-block {
+  text-align: center;
+}
+
+.score-block .value {
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.score-block .label {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  margin-top: 2px;
+}
+
+.score-arrow {
+  font-size: 24px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.score-delta {
+  font-size: 14px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+
+.score-delta.delta-up { background-color: rgba(137, 209, 133, 0.2); color: #89d185; }
+.score-delta.delta-down { background-color: rgba(229, 20, 0, 0.2); color: #f14c4c; }
+.score-delta.delta-flat { background-color: rgba(138, 138, 138, 0.2); color: #8a8a8a; }
+
+.comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.comparison-table th,
+.comparison-table td {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--vscode-widget-border, #333);
+}
+
+.comparison-table th {
+  color: var(--vscode-descriptionForeground);
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.count-badge {
+  background-color: var(--vscode-badge-background, #444);
+  color: var(--vscode-badge-foreground, #fff);
+  border-radius: 10px;
+  padding: 1px 8px;
+  font-size: 11px;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.finding-diff-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 13px;
+}
+
+.finding-diff-item {
+  display: flex;
+  gap: 10px;
+  padding: 8px;
+  border-bottom: 1px solid var(--vscode-widget-border, #2a2a2a);
+  align-items: flex-start;
+}
+
+.finding-diff-item .severity-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.severity-badge.severity-critical { background-color: #e51400; }
+.severity-badge.severity-high { background-color: #f14c4c; }
+.severity-badge.severity-medium { background-color: #e9a700; }
+.severity-badge.severity-low { background-color: #3794ff; }
+.severity-badge.severity-informational { background-color: #8a8a8a; }
+
+.finding-diff-item .details .title {
+  font-weight: 600;
+}
+
+.finding-diff-item .details .location {
+  color: var(--vscode-descriptionForeground);
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 11px;
+}
+
+.empty-list-message {
+  color: var(--vscode-descriptionForeground);
+  font-size: 13px;
+  padding: 8px 0;
+}

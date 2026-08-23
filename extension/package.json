@@ -2,7 +2,7 @@
   "name": "sentricodex",
   "displayName": "SentriCodeX",
   "description": "Local-first static security analysis for VS Code. Scan your code, find vulnerabilities, and get fix recommendations — without your source ever leaving your machine.",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "publisher": "sentricodex",
   "license": "MIT",
   "icon": "resources/icon.png",
@@ -69,11 +69,6 @@
         "category": "SentriCodeX"
       },
       {
-        "command": "sentricodex.generateReport",
-        "title": "SentriCodeX: Generate Report",
-        "category": "SentriCodeX"
-      },
-      {
         "command": "sentricodex.viewHistory",
         "title": "SentriCodeX: View Scan History",
         "category": "SentriCodeX"
@@ -116,7 +111,7 @@
           "type": "string",
           "enum": ["html", "json", "markdown"],
           "default": "html",
-          "description": "Pre-selected format when generating a report."
+          "description": "Pre-selected format when downloading a report from History."
         }
       }
     }

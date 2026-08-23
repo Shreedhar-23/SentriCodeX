@@ -2,11 +2,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import Mocha from 'mocha';
 
-/**
- * Called by @vscode/test-electron inside the real, running VS Code
- * instance. Discovers every *.test.js file in this folder (compiled
- * from *.test.ts) and runs them with Mocha.
- */
 export function run(): Promise<void> {
   const mocha = new Mocha({ ui: 'tdd', color: true, timeout: 20000 });
   const testsRoot = path.resolve(__dirname);
@@ -29,12 +24,6 @@ export function run(): Promise<void> {
   });
 }
 
-/**
- * Manually walks testsRoot for *.test.js files, rather than relying on
- * fs.globSync (only available in newer Node than VS Code's bundled
- * Electron runtime is guaranteed to ship) or adding a new dependency
- * just for file discovery.
- */
 function findTestFiles(dir: string): string[] {
   const results: string[] = [];
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {

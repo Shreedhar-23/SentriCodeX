@@ -3,10 +3,13 @@ import * as vscode from 'vscode';
 
 const EXTENSION_ID = 'sentricodex.sentricodex';
 
+// generateReport is intentionally absent here: it was retired in
+// favor of per-scan actions (View Report / Download Report) in the
+// History panel, since every scan is now recorded there automatically
+// with its full findings.
 const EXPECTED_COMMANDS = [
   'sentricodex.scanCurrentFile',
   'sentricodex.scanWorkspace',
-  'sentricodex.generateReport',
   'sentricodex.viewHistory',
   'sentricodex.openSettings',
   'sentricodex.showDashboard',
@@ -33,6 +36,14 @@ suite('SentriCodeX Extension Integration Tests', () => {
     }
   });
 
+  test('generateReport command no longer exists', async () => {
+    const allCommands = await vscode.commands.getCommands(true);
+    assert.ok(
+      !allCommands.includes('sentricodex.generateReport'),
+      'generateReport should have been removed in favor of History per-row actions.'
+    );
+  });
+
   test('configuration properties are contributed with correct defaults', () => {
     const config = vscode.workspace.getConfiguration('sentricodex');
 
@@ -48,21 +59,14 @@ suite('SentriCodeX Extension Integration Tests', () => {
   });
 
   test('scanCurrentFile command warns rather than throws when no editor is open', async () => {
-    // Close any open editors first so this test is deterministic
-    // regardless of what ran before it.
     await vscode.commands.executeCommand('workbench.action.closeAllEditors');
 
-    // Should resolve cleanly (showing a warning notification internally)
-    // rather than rejecting - this is the command's documented behavior
-    // for the "no active editor" case. Wrapped in Promise.resolve()
-    // since VS Code's Thenable isn't a real Promise.
     await assert.doesNotReject(
       Promise.resolve(vscode.commands.executeCommand('sentricodex.scanCurrentFile'))
     );
   });
 
   test('scanWorkspace command warns rather than throws when no folder is open', async () => {
-    // In the default test environment, no workspace folder is open.
     await assert.doesNotReject(
       Promise.resolve(vscode.commands.executeCommand('sentricodex.scanWorkspace'))
     );

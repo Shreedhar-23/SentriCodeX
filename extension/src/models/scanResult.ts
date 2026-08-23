@@ -1,11 +1,3 @@
-/**
- * TypeScript types mirroring the Python engine's ScanResult JSON schema
- * exactly (see engine/sentricodex/models.py). Keeping these hand-in-sync
- * is a deliberate tradeoff for this project's size — a schema mismatch
- * would surface immediately as a TypeScript compile error wherever the
- * mismatched field is used, rather than as a silent runtime bug.
- */
-
 export type Severity = 'critical' | 'high' | 'medium' | 'low' | 'informational';
 export type Confidence = 'high' | 'medium' | 'low';
 export type Category =

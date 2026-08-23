@@ -2,18 +2,6 @@ import { Finding, ScanResult, Severity } from '../models/scanResult';
 
 const SEVERITY_ORDER: Severity[] = ['critical', 'high', 'medium', 'low', 'informational'];
 
-/**
- * Generates report content in HTML, JSON, or Markdown formats
- * (PDF 2, FR-06). Every function here is a pure string transformation
- * with no file I/O - callers decide where the result gets written.
- *
- * Note on FR-06's "Reports contain no raw secrets" acceptance
- * criterion: this is satisfied structurally, not by redaction. The
- * Finding schema (see models/scanResult.ts, mirroring the engine's
- * Finding model) never stores the actual matched secret text - only
- * rule metadata, file, and line/column. There is nothing sensitive to
- * strip because nothing sensitive was ever captured.
- */
 export class ReportGenerator {
   public static toJson(result: ScanResult): string {
     return JSON.stringify(result, null, 2);

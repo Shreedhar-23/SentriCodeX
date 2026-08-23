@@ -3,26 +3,14 @@ import { Logger } from '../utils/logger';
 import { ScannerBridge, ScannerBridgeError } from '../bridge/ScannerBridge';
 import { DashboardPanel } from '../dashboard/DashboardPanel';
 import { HistoryManager } from '../storage/HistoryManager';
-import { setLatestScanResult } from '../state/ScanResultStore';
 
 /**
  * Factory for the sentricodex.scanCurrentFile command.
  *
- * Responsibility:
- *  - Validate that there is an active, supported file to scan.
- *  - Run the real scan via the ScannerBridge, with a progress
- *    notification since scanning is not instantaneous.
- *  - On success: store the result for Report generation, record it to
- *    History, and open/refresh the Dashboard with real results.
- *  - On failure, surface a clear error message and log details.
- *
- * Returns a bound command handler (rather than being one directly) so
- * it has access to context.extensionUri, which the bridge needs to
- * locate the engine/ folder and the dashboard needs to locate media/.
- *
- * Input:  None (reads vscode.window.activeTextEditor)
- * Output: Opens the Dashboard panel with real scan results, or shows
- *         an error notification.
+ * On success: records the full result to History (which is now the
+ * single durable source of truth for every past scan - including the
+ * most recent one, so a separate "latest scan" store is no longer
+ * needed) and opens/refreshes the Dashboard.
  */
 export function createScanCurrentFileCommand(
   context: vscode.ExtensionContext,
@@ -59,7 +47,6 @@ export function createScanCurrentFileCommand(
           `score ${result.security_score}.`
       );
 
-      setLatestScanResult(result);
       await historyManager.recordScan(result);
       DashboardPanel.createOrShow(context.extensionUri, result);
     } catch (err) {

@@ -1,21 +1,19 @@
-import { Severity } from './scanResult';
+import { ScanResult } from './scanResult';
 
 /**
  * A single historical scan record.
  *
- * Deliberately metadata-only (per PDF 2, FR-08: "Input: Scan metadata,
- * Output: History") - NOT a full copy of that scan's findings. Findings
- * belong to Reports (FR-06) and the Dashboard's in-memory session
- * state; History answers "how has my security posture trended over
- * time?", not "replay every past finding."
+ * Design note: originally (Phase 6) this stored metadata only, per
+ * FR-08's literal scope ("Input: Scan metadata, Output: History").
+ * That was revisited based on real usage: viewing, downloading, and
+ * comparing a specific past scan's actual findings requires the full
+ * ScanResult, not just a summary. Each entry now wraps the complete
+ * result exactly as returned by the engine, including every finding
+ * (each carrying the fingerprint from Phase 3's normalizer, which is
+ * what makes fingerprint-matched comparison between two entries
+ * possible without any additional bookkeeping).
  */
 export interface HistoryEntry {
   id: string;
-  timestamp: string;
-  target: string;
-  filesScanned: number;
-  findingsCount: number;
-  securityScore: number;
-  severityBreakdown: Record<Severity, number>;
-  durationMs: number;
+  result: ScanResult;
 }
