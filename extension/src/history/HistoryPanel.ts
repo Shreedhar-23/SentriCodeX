@@ -236,8 +236,30 @@ export class HistoryPanel {
   }
 
   private async refresh(): Promise<void> {
-    const entries = await this.historyManager.getAll();
-    this.panel.webview.html = this.getHtml(this.panel.webview, entries);
+    try {
+      const entries = await this.historyManager.getAll();
+      this.panel.webview.html = this.getHtml(this.panel.webview, entries);
+    } catch (err) {
+      // Defensive safety net: if rendering fails for any reason, show
+      // a clear error state instead of leaving the panel silently
+      // blank - a blank panel with no explanation is the worst
+      // possible failure mode for a user to debug.
+      Logger.error('Failed to render History panel', err);
+      this.panel.webview.html = this.getErrorHtml(err);
+    }
+  }
+
+  private getErrorHtml(err: unknown): string {
+    const message = err instanceof Error ? err.message : String(err);
+    return `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8" /></head>
+<body style="font-family: sans-serif; padding: 24px; color: #f14c4c;">
+  <h2>SentriCodeX History failed to load</h2>
+  <p>${escapeHtml(message)}</p>
+  <p>See the SentriCodeX Output Channel for details.</p>
+</body>
+</html>`;
   }
 
   private dispose(): void {
@@ -332,4 +354,12 @@ function getNonce(): string {
     text += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return text;
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }

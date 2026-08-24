@@ -42,12 +42,39 @@ export class HistoryManager {
     Logger.info(`Recorded scan to history (${updated.length} total entries).`);
   }
 
-  /** Returns all stored history entries, newest first. */
+  /**
+   * Returns all stored history entries, newest first.
+   *
+   * Entries are validated against the current HistoryEntry shape
+   * before being returned. This matters because the schema changed in
+   * this version (from metadata-only to storing the full ScanResult) -
+   * without validation, an old-format history.json from before this
+   * change would parse successfully as JSON but crash the History
+   * panel when it tried to read entry.result.scanned_at on an entry
+   * that has no .result field at all. Invalid entries are silently
+   * dropped (logged, not surfaced as an error) since there is no way
+   * to reconstruct full findings from the old metadata-only shape.
+   */
   public async getAll(): Promise<HistoryEntry[]> {
     try {
       const bytes = await vscode.workspace.fs.readFile(this.historyFileUri);
       const parsed: unknown = JSON.parse(Buffer.from(bytes).toString('utf8'));
-      return Array.isArray(parsed) ? (parsed as HistoryEntry[]) : [];
+
+      if (!Array.isArray(parsed)) {
+        return [];
+      }
+
+      const validEntries = parsed.filter(isValidHistoryEntry);
+      const discarded = parsed.length - validEntries.length;
+      if (discarded > 0) {
+        Logger.warn(
+          `Discarded ${discarded} history entr${discarded === 1 ? 'y' : 'ies'} ` +
+            'in an outdated format (from before scan history began storing ' +
+            'full results).'
+        );
+      }
+
+      return validEntries;
     } catch (err) {
       if (!this.isFileNotFound(err)) {
         Logger.error('Failed to read scan history', err);
@@ -79,4 +106,30 @@ export class HistoryManager {
   private isFileNotFound(err: unknown): boolean {
     return err instanceof vscode.FileSystemError && err.code === 'FileNotFound';
   }
+}
+
+/**
+ * Runtime check that an unknown value from disk actually matches the
+ * current HistoryEntry shape (has an id and a result object with the
+ * fields a ScanResult must have). Deliberately checks a few key
+ * fields rather than every field - enough to catch "this is the old
+ * metadata-only format" without becoming a full schema validator.
+ */
+function isValidHistoryEntry(value: unknown): value is HistoryEntry {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+  const candidate = value as Record<string, unknown>;
+  if (typeof candidate.id !== 'string') {
+    return false;
+  }
+  if (typeof candidate.result !== 'object' || candidate.result === null) {
+    return false;
+  }
+  const result = candidate.result as Record<string, unknown>;
+  return (
+    typeof result.scanned_at === 'string' &&
+    typeof result.security_score === 'number' &&
+    Array.isArray(result.findings)
+  );
 }
