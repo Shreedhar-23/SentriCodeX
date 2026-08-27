@@ -1,7 +1,6 @@
 """Tests for rules.unsafe_apis.pickle_deserialization.PickleDeserializationRule.
 
-Written by following rules/README.md exactly - itself a verification
-that the contributor guide is accurate.
+Upgraded alongside the rule's move to AST-based detection.
 """
 
 from __future__ import annotations
@@ -20,5 +19,14 @@ def test_flags_pickle_loads() -> None:
 
 
 def test_does_not_flag_json_loads() -> None:
+    matches = run_rule_against_fixture(_RULE, _DIR / "safe.py")
+    assert matches == []
+
+
+def test_does_not_flag_pickle_mentioned_in_comment() -> None:
+    """The old regex-based version would have false-positived on the
+    comment mentioning pickle.loads(data) and pickle.load(). This is
+    the concrete regression test for the AST upgrade.
+    """
     matches = run_rule_against_fixture(_RULE, _DIR / "safe.py")
     assert matches == []

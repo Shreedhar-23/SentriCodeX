@@ -1,20 +1,21 @@
 """SCX-UNSAFE-001: Use of eval()/exec() in Python.
 
-Detects calls to Python's built-in eval() or exec(), which execute
-arbitrary code from a string and are a common source of remote code
-execution vulnerabilities when the argument includes any external
-input.
+AST-based (upgraded from regex): walks the actual parsed syntax tree,
+so text that merely *mentions* eval/exec - inside a comment, a string
+literal, or as part of another identifier like `evaluate()` - is never
+flagged. Regex could only match text; it had no way to distinguish
+"the code calls eval()" from "a comment talks about eval()". AST
+detection makes that distinction for free, because a comment or string
+literal was never a Call node to begin with.
 """
 
 from __future__ import annotations
 
-import re
-
-from rules._common import iter_line_matches
+from rules._ast_common import SourceSyntaxError, iter_direct_call_nodes, parse_python_ast
 from sentricodex.models import Category, Confidence, Language, ParsedSource, RawMatch, Severity
 from sentricodex.rule_base import Rule
 
-_PATTERN = re.compile(r"(?<![\w.])(eval|exec)\s*\(")
+_TARGET_FUNCTIONS = frozenset({"eval", "exec"})
 
 
 class PythonEvalExecRule(Rule):
@@ -35,9 +36,16 @@ class PythonEvalExecRule(Rule):
     supported_languages = frozenset({Language.PYTHON})
 
     def check(self, source: ParsedSource) -> list[RawMatch]:
-        matches: list[RawMatch] = []
+        try:
+            tree = parse_python_ast(source.content)
+        except SourceSyntaxError:
+            # A file with invalid Python syntax has bigger problems
+            # than this rule can report on - stay silent rather than
+            # guessing at line-based matches in broken source.
+            return []
 
-        for line_number, column, _match in iter_line_matches(source.lines, _PATTERN):
+        matches: list[RawMatch] = []
+        for call_node in iter_direct_call_nodes(tree, _TARGET_FUNCTIONS):
             matches.append(
                 RawMatch(
                     rule_id=self.rule_id,
@@ -47,9 +55,8 @@ class PythonEvalExecRule(Rule):
                     category=self.category,
                     description=self.description,
                     recommendation=self.recommendation,
-                    line=line_number,
-                    column=column,
+                    line=call_node.lineno,
+                    column=call_node.col_offset + 1,
                 )
             )
-
         return matches

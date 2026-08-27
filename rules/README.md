@@ -125,6 +125,59 @@ pytest tests/rules/test_pickle_deserialization.py -v
 python -m mypy rules engine/sentricodex --ignore-missing-imports
 ```
 
-That's the complete cycle. No changes to `Scanner`, `RuleExecutor`,
-`FileCollector`, or any TypeScript code — the extensibility mechanism
-built in Phase 4 is exactly what makes that true.
+That's the complete cycle for a regex-based rule. No changes to
+`Scanner`, `RuleExecutor`, `FileCollector`, or any TypeScript code —
+the extensibility mechanism built in Phase 4 is exactly what makes
+that true.
+
+## AST-Based Rules (an alternative to regex)
+
+`Rule.check()`'s contract is just "return `RawMatch` objects" — it
+never mandates *how*. Regex is simple and works well for most
+patterns, but it has one structural blind spot: it cannot distinguish
+"this code actually calls `eval()`" from "this comment/string merely
+*mentions* eval()". Two rules — `SCX-UNSAFE-001` (Python eval/exec)
+and `SCX-UNSAFE-004` (pickle deserialization) — were upgraded from
+regex to AST-based detection specifically to close that gap.
+
+### When to prefer AST over regex
+
+- The pattern is a genuine function/method **call**, not just text
+  (eval/exec, pickle.loads, etc.) — this is the main case
+- False positives from comments, strings, or similar identifiers are a
+  real problem for the pattern in question
+- The language has a standard library AST module (Python: `ast`).
+  SentriCodeX has no equivalent built-in parser for JS/TS — an AST
+  rule for those languages would need a real parser dependency, a
+  bigger decision than adding one Python rule
+
+### How it works
+
+`rules/_ast_common.py` provides two helpers:
+
+- `iter_direct_call_nodes(tree, {"eval", "exec"})` — bare-name calls
+- `iter_module_attribute_calls(tree, "pickle", {"load", "loads"})` —
+  `module.function(...)` calls
+
+A rule using either looks like:
+
+```python
+from rules._ast_common import SourceSyntaxError, iter_direct_call_nodes, parse_python_ast
+
+def check(self, source: ParsedSource) -> list[RawMatch]:
+    try:
+        tree = parse_python_ast(source.content)
+    except SourceSyntaxError:
+        return []  # Invalid syntax in the scanned file, not our bug.
+
+    matches = []
+    for call_node in iter_direct_call_nodes(tree, _TARGET_FUNCTIONS):
+        matches.append(RawMatch(..., line=call_node.lineno, column=call_node.col_offset + 1))
+    return matches
+```
+
+See `rules/unsafe_apis/python_eval_exec.py` for the complete working
+example, and `tests/rules/test_python_eval_exec.py` for how to write a
+regression test proving a specific false positive is gone — the most
+convincing test for an AST upgrade is a fixture containing exactly the
+text that used to fool the regex version.

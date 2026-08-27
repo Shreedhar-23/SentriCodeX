@@ -1,23 +1,19 @@
 """SCX-UNSAFE-004: Unsafe Deserialization via pickle.loads().
 
-Detects use of Python's pickle.load()/loads(), which can execute
-arbitrary code when deserializing untrusted data - a well-known
-remote code execution vector.
-
-This rule was added by following rules/README.md exactly, as a
-verification that the contributor guide is accurate and the
-extensibility mechanism genuinely requires no engine changes.
+AST-based (upgraded from regex): matches real pickle.load()/loads()
+calls - an ast.Call node shaped like `pickle.loads(...)` - rather than
+the text substring "pickle.loads(", so a comment or string literal
+mentioning it is correctly never flagged.
 """
 
 from __future__ import annotations
 
-import re
-
-from rules._common import iter_line_matches
+from rules._ast_common import SourceSyntaxError, iter_module_attribute_calls, parse_python_ast
 from sentricodex.models import Category, Confidence, Language, ParsedSource, RawMatch, Severity
 from sentricodex.rule_base import Rule
 
-_PATTERN = re.compile(r"pickle\.loads?\s*\(")
+_PICKLE_MODULE = "pickle"
+_TARGET_FUNCTIONS = frozenset({"load", "loads"})
 
 
 class PickleDeserializationRule(Rule):
@@ -37,8 +33,13 @@ class PickleDeserializationRule(Rule):
     supported_languages = frozenset({Language.PYTHON})
 
     def check(self, source: ParsedSource) -> list[RawMatch]:
+        try:
+            tree = parse_python_ast(source.content)
+        except SourceSyntaxError:
+            return []
+
         matches: list[RawMatch] = []
-        for line_number, column, _match in iter_line_matches(source.lines, _PATTERN):
+        for call_node in iter_module_attribute_calls(tree, _PICKLE_MODULE, _TARGET_FUNCTIONS):
             matches.append(
                 RawMatch(
                     rule_id=self.rule_id,
@@ -48,8 +49,8 @@ class PickleDeserializationRule(Rule):
                     category=self.category,
                     description=self.description,
                     recommendation=self.recommendation,
-                    line=line_number,
-                    column=column,
+                    line=call_node.lineno,
+                    column=call_node.col_offset + 1,
                 )
             )
         return matches
