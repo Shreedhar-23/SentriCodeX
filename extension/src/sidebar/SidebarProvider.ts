@@ -83,9 +83,14 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     <button id="viewHistory" class="sc-button">
       View History
     </button>
-    <button id="openSettings" class="sc-button sc-button-secondary">
-      Settings
-    </button>
+    <button
+  id="openSettings"
+  class="sc-settings-button"
+  title="Settings"
+  aria-label="Settings"
+>
+  ⚙
+</button>
   </div>
   <script nonce="${nonce}" src="${jsUri}"></script>
 </body>
