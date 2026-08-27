@@ -51,7 +51,7 @@ DOCKERFILE_PREFIX = "Dockerfile."
 
 # Files larger than this are skipped entirely (performance guard, per
 # PDF 5 Section 9).
-MAX_FILE_SIZE_BYTES: int = 2 * 1024 * 1024  # 2 MB
+MAX_FILE_SIZE_BYTES: int = 10 * 1024 * 1024  # 10 MB
 
 # Number of leading bytes inspected to heuristically detect binary files.
 BINARY_SNIFF_BYTES: int = 1024
