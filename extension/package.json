@@ -5,7 +5,7 @@
   "version": "1.1.0",
   "publisher": "sentricodex",
   "license": "MIT",
-  "icon": "resources/icon.png",
+  "icon": "resources/icon1.png",
   "galleryBanner": {
     "color": "#141e30",
     "theme": "dark"
@@ -44,7 +44,7 @@
         {
           "id": "sentricodex",
           "title": "SentriCodeX",
-          "icon": "resources/activity-bar-icon.svg"
+          "icon": "resources/activity-bar-icon1.svg"
         }
       ]
     },
