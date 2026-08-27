@@ -52,7 +52,10 @@ body {
 }
 
 .sc-button-secondary {
-  margin-top: 8px;
+  margin-bottom: 8px;
+  margin-right: 8px;
+  background-color: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
   border-top: 1px solid var(--vscode-widget-border, transparent);
   padding-top: 12px;
 }
