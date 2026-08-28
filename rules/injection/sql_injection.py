@@ -3,13 +3,27 @@
 Detects database .execute() calls whose query string appears to be
 built via f-strings, % formatting, .format(), or concatenation instead
 of parameterized placeholders - the classic SQL injection pattern.
+
+Confirmation checks (SQL keyword present, dynamic build pattern
+present) run against the full call text via extract_call_text(), not
+just the anchor line - a call written across multiple lines, e.g.
+
+    cursor.execute(
+        f"SELECT * FROM users WHERE id = {user_id}"
+    )
+
+is otherwise invisible to a purely line-based check, since the SQL
+keyword and the f-string prefix are on a different line than
+".execute(". The finding is still reported at the anchor line/column
+(where ".execute(" itself was found), matching where a developer would
+actually look.
 """
 
 from __future__ import annotations
 
 import re
 
-from rules._common import iter_line_matches
+from rules._common import extract_call_text, iter_line_matches
 from sentricodex.models import Category, Confidence, Language, ParsedSource, RawMatch, Severity
 from sentricodex.rule_base import Rule
 
@@ -43,11 +57,11 @@ class SqlInjectionRule(Rule):
         for line_number, column, _match in iter_line_matches(
             source.lines, _EXECUTE_PATTERN
         ):
-            line = source.lines[line_number - 1]
+            call_text = extract_call_text(source.lines, line_number)
 
-            if not _SQL_KEYWORD_PATTERN.search(line):
+            if not _SQL_KEYWORD_PATTERN.search(call_text):
                 continue
-            if not _DYNAMIC_BUILD_PATTERN.search(line):
+            if not _DYNAMIC_BUILD_PATTERN.search(call_text):
                 continue
 
             matches.append(

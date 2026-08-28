@@ -4,13 +4,23 @@ Detects shell commands built dynamically (via f-strings, concatenation,
 or template literals) and passed to os.system, subprocess, or Node's
 child_process.exec - a classic command injection pattern when any part
 of the command includes variable data.
+
+The Python confirmation check runs against the full call text via
+extract_call_text(), not just the anchor line, for the same reason as
+SqlInjectionRule: a multi-line call like
+
+    subprocess.run(
+        f"ping -c 1 {hostname}", shell=True
+    )
+
+would otherwise be invisible to a purely line-based check.
 """
 
 from __future__ import annotations
 
 import re
 
-from rules._common import iter_line_matches
+from rules._common import extract_call_text, iter_line_matches
 from sentricodex.models import Category, Confidence, Language, ParsedSource, RawMatch, Severity
 from sentricodex.rule_base import Rule
 
@@ -56,8 +66,8 @@ class CommandInjectionRule(Rule):
         for line_number, column, _match in iter_line_matches(
             source.lines, _PYTHON_CALL_PATTERN
         ):
-            line = source.lines[line_number - 1]
-            if _PYTHON_DYNAMIC_PATTERN.search(line):
+            call_text = extract_call_text(source.lines, line_number)
+            if _PYTHON_DYNAMIC_PATTERN.search(call_text):
                 matches.append(self._build_match(line_number, column))
         return matches
 
@@ -66,8 +76,8 @@ class CommandInjectionRule(Rule):
         for line_number, column, _match in iter_line_matches(
             source.lines, _JS_CALL_PATTERN
         ):
-            line = source.lines[line_number - 1]
-            if _JS_DYNAMIC_PATTERN.search(line):
+            call_text = extract_call_text(source.lines, line_number)
+            if _JS_DYNAMIC_PATTERN.search(call_text):
                 matches.append(self._build_match(line_number, column))
         return matches
 
