@@ -25,6 +25,7 @@ from sentricodex.parser import SourceParser
 from sentricodex.rule_executor import RuleExecutor
 from sentricodex.rule_loader import load_default_registry
 from sentricodex.scoring import calculate_security_score
+from sentricodex.suppressions import is_suppressed
 
 logger = get_logger()
 
@@ -66,8 +67,18 @@ class Scanner:
                 continue
 
             raw_matches = self._executor.execute(parsed_source)
+            unsuppressed_matches = [
+                match
+                for match in raw_matches
+                if not is_suppressed(parsed_source.lines, match.line, match.rule_id)
+            ]
+            suppressed_count = len(raw_matches) - len(unsuppressed_matches)
+            if suppressed_count:
+                logger.info(
+                    f"Suppressed {suppressed_count} finding(s) in {scanned_file.path}"
+                )
             all_findings.extend(
-                self._normalizer.normalize(scanned_file.path, raw_matches)
+                self._normalizer.normalize(scanned_file.path, unsuppressed_matches)
             )
 
         summary = self._build_summary(len(scanned_files), all_findings)
