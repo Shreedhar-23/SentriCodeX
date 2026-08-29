@@ -181,3 +181,16 @@ example, and `tests/rules/test_python_eval_exec.py` for how to write a
 regression test proving a specific false positive is gone — the most
 convincing test for an AST upgrade is a fixture containing exactly the
 text that used to fool the regex version.
+
+## Suppression Comments (handled automatically - no rule code needed)
+
+Users can suppress any finding with an inline comment:
+```
+# sentricodex: ignore SCX-SECRET-001
+# sentricodex: ignore-file SCX-SECRET-001
+```
+This is implemented once, centrally, where every rule's matches are
+filtered - individual rules never need to check for suppression
+comments themselves. When writing a new rule, you don't need to do
+anything to support this; it works automatically as soon as the rule
+is registered.
