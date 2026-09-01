@@ -44,3 +44,5 @@ h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 0.04em; color: 
 .severity-badge.severity-low { background-color: #3794ff; }
 .severity-badge.severity-informational { background-color: #8a8a8a; }
 .empty-state { text-align: center; padding: 24px; color: var(--vscode-descriptionForeground); font-size: 13px; }
+
+.section-count{font-size:11px;color:var(--vscode-descriptionForeground);font-weight:400}.section-hint{font-size:12px;color:var(--vscode-descriptionForeground)}.suppressed-section{margin-top:32px;border-top:1px solid var(--vscode-widget-border,#444);padding-top:8px}.suppressed-row{opacity:.82}.suppressed-table code{font-family:var(--vscode-editor-font-family,monospace);font-size:11px;background:var(--vscode-textCodeBlock-background,#2a2a2a);padding:3px 5px;border-radius:3px}

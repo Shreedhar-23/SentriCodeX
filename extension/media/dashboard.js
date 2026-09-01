@@ -12,9 +12,12 @@
     renderBarChart();
     renderRecommendations();
     renderTable();
+    renderSuppressedFindings();
 
     document.getElementById('searchInput').addEventListener('input', renderTable);
     document.getElementById('severityFilter').addEventListener('change', renderTable);
+    document.getElementById('activeCount').textContent = '(' + data.findings.length + ')';
+    document.getElementById('suppressedCount').textContent = '(' + (data.suppressed_findings || []).length + ')';
     document.querySelectorAll('.findings-table th[data-sort]').forEach((th) => {
       th.addEventListener('click', () => {
         const column = th.getAttribute('data-sort');
@@ -142,6 +145,22 @@
         );
       })
       .join('');
+  }
+
+  function renderSuppressedFindings() {
+    const findings = data.suppressed_findings || [];
+    const tbody = document.getElementById('suppressedTableBody');
+    const empty = document.getElementById('suppressedEmptyState');
+    if (findings.length === 0) { tbody.innerHTML = ''; empty.hidden = false; return; }
+    empty.hidden = true;
+    tbody.innerHTML = findings.map((finding) => '<tr class="suppressed-row">' +
+      '<td><span class="severity-badge severity-' + finding.severity + '">' + finding.severity + '</span></td>' +
+      '<td>' + escapeHtml(finding.rule_id) + '</td>' +
+      '<td>' + escapeHtml(shortenPath(finding.file)) + '</td>' +
+      '<td>' + finding.line + '</td>' +
+      '<td>' + escapeHtml(finding.description) + '</td>' +
+      '<td><code>' + escapeHtml(finding.suppression_comment) + '</code><br><small>' + escapeHtml(finding.suppression_type) + ' suppression</small></td>' +
+      '</tr>').join('');
   }
 
   function sortFindings(findings, column, direction) {

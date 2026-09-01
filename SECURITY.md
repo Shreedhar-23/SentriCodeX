@@ -14,8 +14,7 @@ project itself seriously.
 If you discover a security vulnerability in SentriCodeX itself (not a
 finding produced *by* SentriCodeX about your code, but an issue in
 SentriCodeX's own code), please report it privately rather than opening a
-public GitHub issue. Reporting instructions (email/contact) will be added
-once the GitHub repository and publisher profile are created (Phase 9).
+public GitHub issue.
 
 ## Our Commitment
 

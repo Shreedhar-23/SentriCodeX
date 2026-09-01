@@ -24,6 +24,12 @@ export interface Finding {
   fingerprint: string;
 }
 
+export interface SuppressedFinding extends Finding {
+  suppressed: true;
+  suppression_type: 'line' | 'file';
+  suppression_comment: string;
+}
+
 export interface ScanSummary {
   files_scanned: number;
   findings_count: number;
@@ -36,6 +42,7 @@ export interface ScanResult {
   target: string;
   files_scanned: number;
   findings: Finding[];
+  suppressed_findings: SuppressedFinding[];
   summary: ScanSummary;
   security_score: number;
   duration_ms: number;
