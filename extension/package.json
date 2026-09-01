@@ -3,7 +3,7 @@
   "displayName": "SentriCodeX",
   "description": "Local-first static security analysis for VS Code. Scan your code, find vulnerabilities, and get fix recommendations — without your source ever leaving your machine.",
   "version": "1.1.0",
-  "publisher": "sentricodex",
+  "publisher": "Shreedhar",
   "license": "MIT",
   "icon": "resources/icon1.png",
   "galleryBanner": {
