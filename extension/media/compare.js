@@ -2,6 +2,11 @@
 
   const data = window.__SENTRICODEX_COMPARE_DATA__;
 
+  if (!data || !data.before || !data.after) {
+    console.error('SentriCodeX Compare: comparison data is missing.');
+    return;
+  }
+
   const before = data.before;
   const after = data.after;
 
@@ -13,7 +18,12 @@
     'informational'
   ];
 
-  init();
+  const beforeFindings = before.findings || [];
+  const afterFindings = after.findings || [];
+
+  const beforeSuppressed = before.suppressed_findings || [];
+  const afterSuppressed = after.suppressed_findings || [];
+
 
   function init() {
     renderScoreComparison();
@@ -21,10 +31,24 @@
     renderDiff();
   }
 
-  function renderScoreComparison() {
-    const container = document.getElementById('scoreComparison');
 
-    const delta = after.security_score - before.security_score;
+  function renderScoreComparison() {
+
+    const container =
+      document.getElementById('scoreComparison');
+
+    if (!container) {
+      return;
+    }
+
+    const beforeScore =
+      before.security_score || 0;
+
+    const afterScore =
+      after.security_score || 0;
+
+    const delta =
+      afterScore - beforeScore;
 
     let deltaClass = 'delta-flat';
     let deltaText = 'No change';
@@ -32,37 +56,62 @@
     if (delta > 0) {
       deltaClass = 'delta-up';
       deltaText = '+' + delta;
-    } else if (delta < 0) {
+    }
+
+    if (delta < 0) {
       deltaClass = 'delta-down';
       deltaText = String(delta);
     }
 
     container.innerHTML =
       '<div class="score-block">' +
-        '<div class="value">' + before.security_score + '</div>' +
-        '<div class="label">' + formatDate(before.scanned_at) + '</div>' +
+        '<div class="value">' +
+          beforeScore +
+        '</div>' +
+        '<div class="label">' +
+          formatDate(before.scanned_at) +
+        '</div>' +
       '</div>' +
 
       '<div class="score-arrow">&rarr;</div>' +
 
       '<div class="score-block">' +
-        '<div class="value">' + after.security_score + '</div>' +
-        '<div class="label">' + formatDate(after.scanned_at) + '</div>' +
+        '<div class="value">' +
+          afterScore +
+        '</div>' +
+        '<div class="label">' +
+          formatDate(after.scanned_at) +
+        '</div>' +
       '</div>' +
 
-      '<div class="score-delta ' + deltaClass + '">' +
+      '<div class="score-delta ' +
+        deltaClass +
+      '">' +
         deltaText +
       '</div>';
   }
 
+
   function renderSeverityTable() {
-    const table = document.getElementById('severityTable');
+
+    const table =
+      document.getElementById('severityTable');
+
+    if (!table) {
+      return;
+    }
 
     const beforeBreakdown =
-      before.summary?.severity_breakdown ?? {};
+      before.summary &&
+      before.summary.severity_breakdown
+        ? before.summary.severity_breakdown
+        : {};
 
     const afterBreakdown =
-      after.summary?.severity_breakdown ?? {};
+      after.summary &&
+      after.summary.severity_breakdown
+        ? after.summary.severity_breakdown
+        : {};
 
     let rows =
       '<tr>' +
@@ -72,7 +121,7 @@
         '<th>Change</th>' +
       '</tr>';
 
-    SEVERITY_ORDER.forEach((severity) => {
+    SEVERITY_ORDER.forEach(function (severity) {
 
       const beforeCount =
         beforeBreakdown[severity] || 0;
@@ -100,311 +149,183 @@
     table.innerHTML = rows;
   }
 
-  function renderDiff() {
-    function renderDiff() {
 
-  // Safely support old history entries that may not
-  // contain suppressed_findings.
-  const beforeFindings = before.findings ?? [];
-  const afterFindings = after.findings ?? [];
-  const afterSuppressed = after.suppressed_findings ?? [];
+  function getKey(finding) {
 
-
-  // --------------------------------------------------
-  // EXACT FINGERPRINTS
-  // --------------------------------------------------
-
-  const beforeFingerprints = new Set(
-    beforeFindings.map((f) => f.fingerprint)
-  );
-
-  const afterFingerprints = new Set(
-    afterFindings.map((f) => f.fingerprint)
-  );
-
-  const afterSuppressedFingerprints = new Set(
-    afterSuppressed.map((f) => f.fingerprint)
-  );
-
-
-  // --------------------------------------------------
-  // STABLE IDENTITY
-  // --------------------------------------------------
-  //
-  // Fingerprints contain line/column.
-  // Adding a suppression comment above a finding
-  // can change the line number.
-  //
-  // Therefore we also compare:
-  //
-  // rule_id + file + title + description
-  //
-  // This lets us recognize the same finding even
-  // when its line number changed.
-  //
-
-  function stableFindingKey(finding) {
     return [
       finding.rule_id,
       finding.file,
       finding.title,
       finding.description
     ]
-      .map((value) => String(value ?? '').toLowerCase())
+      .map(function (value) {
+        return String(value || '')
+          .toLowerCase()
+          .trim();
+      })
       .join('|');
   }
 
 
-  // --------------------------------------------------
-  // BUILD STABLE KEYS FOR NEW SUPPRESSED FINDINGS
-  // --------------------------------------------------
+  function renderDiff() {
 
-  const suppressedStableKeys = new Set(
-    afterSuppressed.map(
-      (f) => stableFindingKey(f)
-    )
-  );
-
-
-  // --------------------------------------------------
-  // NEW FINDINGS
-  // --------------------------------------------------
-  //
-  // A finding is NEW only if it is not represented
-  // by an active finding from the previous scan.
-  //
-
-  const newFindings = afterFindings.filter(
-    (f) => {
-
-      if (beforeFingerprints.has(f.fingerprint)) {
-        return false;
-      }
-
-      const key = stableFindingKey(f);
-
-      return !beforeFindings.some(
-        (oldFinding) =>
-          stableFindingKey(oldFinding) === key
+    const beforeFingerprintSet =
+      new Set(
+        beforeFindings.map(function (f) {
+          return f.fingerprint;
+        })
       );
-    }
-  );
 
 
-  // --------------------------------------------------
-  // SUPPRESSED FINDINGS
-  // --------------------------------------------------
-  //
-  // IMPORTANT:
-  //
-  // A finding from the old scan is SUPPRESSED if
-  // the same finding appears in the new scan's
-  // suppressed_findings.
-  //
-  // We first try fingerprint matching.
-  // Then we fall back to stable identity matching.
-  //
-
-  const suppressedFindings = beforeFindings.filter(
-    (oldFinding) => {
-
-      // Exact fingerprint match
-      if (
-        afterSuppressedFingerprints.has(
-          oldFinding.fingerprint
-        )
-      ) {
-        return true;
-      }
-
-      // Stable identity match
-      const oldKey =
-        stableFindingKey(oldFinding);
-
-      return suppressedStableKeys.has(oldKey);
-    }
-  );
+    const afterFingerprintSet =
+      new Set(
+        afterFindings.map(function (f) {
+          return f.fingerprint;
+        })
+      );
 
 
-  // --------------------------------------------------
-  // RESOLVED FINDINGS
-  // --------------------------------------------------
-  //
-  // A finding is RESOLVED only when it:
-  //
-  // 1. Is not active in the new scan
-  // AND
-  // 2. Is not suppressed in the new scan
-  //
-  // This is the important correction.
-  //
-
-  const suppressedStableKeySet =
-    new Set(
-      suppressedFindings.map(
-        (f) => stableFindingKey(f)
-      )
-    );
+    const afterSuppressedFingerprintSet =
+      new Set(
+        afterSuppressed.map(function (f) {
+          return f.fingerprint;
+        })
+      );
 
 
-  const resolvedFindings =
-    beforeFindings.filter(
-      (oldFinding) => {
+    const afterSuppressedKeySet =
+      new Set(
+        afterSuppressed.map(function (f) {
+          return getKey(f);
+        })
+      );
 
-        // Still active
+
+    // NEW
+    const newFindings =
+      afterFindings.filter(function (finding) {
+
         if (
-          afterFingerprints.has(
+          beforeFingerprintSet.has(
+            finding.fingerprint
+          )
+        ) {
+          return false;
+        }
+
+        const key = getKey(finding);
+
+        return !beforeFindings.some(function (oldFinding) {
+          return getKey(oldFinding) === key;
+        });
+      });
+
+
+    // SUPPRESSED
+    const suppressedFindings =
+      beforeFindings.filter(function (oldFinding) {
+
+        if (
+          afterSuppressedFingerprintSet.has(
+            oldFinding.fingerprint
+          )
+        ) {
+          return true;
+        }
+
+        return afterSuppressedKeySet.has(
+          getKey(oldFinding)
+        );
+      });
+
+
+    // RESOLVED
+    const resolvedFindings =
+      beforeFindings.filter(function (oldFinding) {
+
+        if (
+          afterFingerprintSet.has(
             oldFinding.fingerprint
           )
         ) {
           return false;
         }
 
-        // Now suppressed
         if (
-          afterSuppressedFingerprints.has(
+          afterSuppressedFingerprintSet.has(
             oldFinding.fingerprint
           )
         ) {
           return false;
         }
 
-        // Suppressed but line number changed
         if (
-          suppressedStableKeySet.has(
-            stableFindingKey(oldFinding)
+          afterSuppressedKeySet.has(
+            getKey(oldFinding)
           )
         ) {
           return false;
         }
 
-        // Truly gone
         return true;
-      }
-    );
+      });
 
 
-  // --------------------------------------------------
-  // UNCHANGED
-  // --------------------------------------------------
+    // UNCHANGED
+    const unchangedFindings =
+      afterFindings.filter(function (newFinding) {
 
-  const unchangedFindings =
-    afterFindings.filter(
-      (newFinding) =>
-        beforeFindings.some(
-          (oldFinding) => {
+        return beforeFindings.some(function (oldFinding) {
 
-            if (
-              oldFinding.fingerprint ===
-              newFinding.fingerprint
-            ) {
-              return true;
-            }
-
-            return (
-              stableFindingKey(oldFinding) ===
-              stableFindingKey(newFinding)
-            );
+          if (
+            oldFinding.fingerprint ===
+            newFinding.fingerprint
+          ) {
+            return true;
           }
-        )
+
+          return (
+            getKey(oldFinding) ===
+            getKey(newFinding)
+          );
+        });
+      });
+
+
+    // SUPPRESSED FILES
+    const suppressedFiles =
+      new Set(
+        suppressedFindings.map(function (finding) {
+          return finding.file;
+        })
+      );
+
+
+    setText(
+      'newCount',
+      newFindings.length
     );
 
-
-  // --------------------------------------------------
-  // SUPPRESSED FILE COUNT
-  // --------------------------------------------------
-
-  const suppressedFileCount =
-    new Set(
-      suppressedFindings.map(
-        (f) => f.file
-      )
-    ).size;
-
-
-  // --------------------------------------------------
-  // UPDATE COUNTS
-  // --------------------------------------------------
-
-  const newCount =
-    document.getElementById('newCount');
-
-  if (newCount) {
-    newCount.textContent =
-      String(newFindings.length);
-  }
-
-
-  const resolvedCount =
-    document.getElementById('resolvedCount');
-
-  if (resolvedCount) {
-    resolvedCount.textContent =
-      String(resolvedFindings.length);
-  }
-
-
-  const unchangedCount =
-    document.getElementById('unchangedCount');
-
-  if (unchangedCount) {
-    unchangedCount.textContent =
-      String(unchangedFindings.length);
-  }
-
-
-  const suppressedCount =
-    document.getElementById('suppressedCount');
-
-  if (suppressedCount) {
-    suppressedCount.textContent =
-      String(suppressedFindings.length);
-  }
-
-
-  const suppressedFileCountElement =
-    document.getElementById(
-      'suppressedFileCount'
+    setText(
+      'resolvedCount',
+      resolvedFindings.length
     );
 
-  if (suppressedFileCountElement) {
-    suppressedFileCountElement.textContent =
-      String(suppressedFileCount);
-  }
+    setText(
+      'unchangedCount',
+      unchangedFindings.length
+    );
 
+    setText(
+      'suppressedCount',
+      suppressedFindings.length
+    );
 
-  // --------------------------------------------------
-  // RENDER LISTS
-  // --------------------------------------------------
+    setText(
+      'suppressedFileCount',
+      suppressedFiles.size
+    );
 
-  renderFindingList(
-    'newFindingsList',
-    newFindings,
-    'No new findings.'
-  );
-
-
-  renderFindingList(
-    'resolvedFindingsList',
-    resolvedFindings,
-    'No findings were resolved.'
-  );
-
-
-  renderFindingList(
-    'suppressedFindingsList',
-    suppressedFindings,
-    'No findings were suppressed.'
-  );
-}
-    }
-
-
-    /*
-     * ------------------------------------
-     * RENDER FINDING LISTS
-     * ------------------------------------
-     */
 
     renderFindingList(
       'newFindingsList',
@@ -428,6 +349,18 @@
   }
 
 
+  function setText(id, value) {
+
+    const element =
+      document.getElementById(id);
+
+    if (element) {
+      element.textContent =
+        String(value);
+    }
+  }
+
+
   function renderFindingList(
     elementId,
     findings,
@@ -437,17 +370,11 @@
     const list =
       document.getElementById(elementId);
 
-    /*
-     * The suppressed section was newly added.
-     * If the HTML does not contain the element,
-     * simply skip it instead of crashing.
-     */
     if (!list) {
       return;
     }
 
-
-    if (findings.length === 0) {
+    if (!findings.length) {
 
       list.innerHTML =
         '<li class="empty-list-message">' +
@@ -457,68 +384,84 @@
       return;
     }
 
-
     list.innerHTML =
       findings
-        .map((finding) => {
-
-          const title =
-            finding.title ||
-            finding.description ||
-            'Security finding';
-
+        .map(function (finding) {
 
           return (
             '<li class="finding-diff-item">' +
 
               '<span class="severity-badge severity-' +
-              escapeHtml(finding.severity) +
+                escapeHtml(finding.severity) +
               '">' +
-              escapeHtml(finding.severity) +
+
+                escapeHtml(
+                  finding.severity
+                ) +
+
               '</span>' +
 
               '<div class="details">' +
 
                 '<div class="title">' +
-                escapeHtml(title) +
-                ' (' +
-                escapeHtml(finding.rule_id) +
-                ')' +
+                  escapeHtml(
+                    finding.title ||
+                    finding.description ||
+                    'Finding'
+                  ) +
+                  ' (' +
+                  escapeHtml(
+                    finding.rule_id
+                  ) +
+                  ')' +
                 '</div>' +
 
                 '<div class="location">' +
-                escapeHtml(
-                  shortenPath(finding.file)
-                ) +
-                ':' +
-                escapeHtml(finding.line) +
+                  escapeHtml(
+                    shortenPath(
+                      finding.file
+                    )
+                  ) +
+                  ':' +
+                  escapeHtml(
+                    finding.line
+                  ) +
                 '</div>' +
 
               '</div>' +
 
             '</li>'
           );
-
         })
         .join('');
   }
 
 
-  function formatDate(isoString) {
-    return new Date(
-      isoString
-    ).toLocaleString();
+  function formatDate(value) {
+
+    if (!value) {
+      return '';
+    }
+
+    return new Date(value)
+      .toLocaleString();
   }
 
 
   function shortenPath(filePath) {
 
-    const parts =
-      String(filePath).split(/[\\/]/);
+    const value =
+      String(filePath || '');
 
-    return parts.length > 2
-      ? '...' + parts.slice(-2).join('/')
-      : String(filePath);
+    const parts =
+      value.split(/[\\/]/);
+
+    if (parts.length > 2) {
+      return '...' +
+        parts.slice(-2).join('/');
+    }
+
+    return value;
   }
 
 
@@ -528,9 +471,13 @@
       document.createElement('div');
 
     div.textContent =
-      String(value ?? '');
+      String(value || '');
 
     return div.innerHTML;
   }
+
+
+  // Start the comparison.
+  init();
 
 })();
