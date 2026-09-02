@@ -139,101 +139,143 @@ export class HistoryPanel {
     DashboardPanel.createOrShow(this.extensionUri, entry.result);
   }
 
-  private async handleDownloadReport(entryId: string): Promise<void> {
-    const entry = await this.historyManager.getById(entryId);
-    if (!entry) {
-      void vscode.window.showWarningMessage('SentriCodeX: That scan is no longer in history.');
-      return;
-    }
+private async handleDownloadReport(entryId: string): Promise<void> {
+  const entry = await this.historyManager.getById(entryId);
 
-    const defaultFormat = vscode.workspace
-      .getConfiguration('sentricodex')
-      .get<ReportFormat>('defaultReportFormat', 'html');
-    const orderedChoices = [...FORMAT_CHOICES].sort((a, b) =>
-      a.format === defaultFormat ? -1 : b.format === defaultFormat ? 1 : 0
+  if (!entry) {
+    void vscode.window.showWarningMessage(
+      'SentriCodeX: That scan is no longer in history.'
     );
+    return;
+  }
 
-    const choice = await vscode.window.showQuickPick(orderedChoices, {
-      placeHolder: `Choose a report format (default: ${defaultFormat})`,
-    });
-    if (!choice) {
-      return;
-    }
+  const defaultFormat = vscode.workspace
+    .getConfiguration('sentricodex')
+    .get<ReportFormat>('defaultReportFormat', 'html');
 
-    const content = this.renderReport(choice.format, entry.result);
-const defaultUri = this.buildDefaultUri(choice.format, entry);
+  const orderedChoices = [...FORMAT_CHOICES].sort((a, b) =>
+    a.format === defaultFormat
+      ? -1
+      : b.format === defaultFormat
+        ? 1
+        : 0
+  );
 
-const saveUri = await vscode.window.showSaveDialog({
-  defaultUri,
-  filters: {
-    [choice.label]: [EXTENSIONS[choice.format]],
-  },
-});
+  const choice = await vscode.window.showQuickPick(orderedChoices, {
+    placeHolder: `Choose a report format (default: ${defaultFormat})`,
+  });
 
-if (!saveUri) {
-  return;
-}
-
-try {
-  // Make sure the parent directory exists.
-  const parentDir = vscode.Uri.file(path.dirname(saveUri.fsPath));
+  if (!choice) {
+    return;
+  }
 
   try {
-    await vscode.workspace.fs.createDirectory(parentDir);
-  } catch (mkdirError) {
-    // Directory may already exist. Ignore that case.
-    const message =
-      mkdirError instanceof Error
-        ? mkdirError.message
-        : String(mkdirError);
+    // Generate the report INSIDE the try/catch.
+    const content = this.renderReport(choice.format, entry.result);
 
-    if (!/already exists|file exists|EEXIST/i.test(message)) {
-      throw mkdirError;
+    Logger.info(
+      `Generating ${choice.format} report for scan ${entryId}`
+    );
+
+    // Check that report generation actually returned content.
+    if (typeof content !== 'string') {
+      throw new Error(
+        `${choice.format} report generator did not return a string.`
+      );
     }
-  }
 
-  // Convert the generated report into UTF-8 bytes.
-  const data = Buffer.from(content, 'utf8');
-
-  // Write the report.
-  await vscode.workspace.fs.writeFile(saveUri, data);
-
-  Logger.info(
-    `Report written successfully: ${saveUri.fsPath}`
-  );
-
-  const openAction = 'Open Report';
-
-  const selection = await vscode.window.showInformationMessage(
-    `SentriCodeX: Report saved to ${saveUri.fsPath}`,
-    openAction
-  );
-
-  if (selection === openAction) {
-    if (choice.format === 'html') {
-      await vscode.env.openExternal(saveUri);
-    } else {
-      const document =
-        await vscode.workspace.openTextDocument(saveUri);
-
-      await vscode.window.showTextDocument(document);
+    if (content.length === 0) {
+      throw new Error(
+        `${choice.format} report generator returned an empty report.`
+      );
     }
+
+    Logger.info(
+      `${choice.format} report generated successfully (${content.length} characters)`
+    );
+
+    const defaultUri = this.buildDefaultUri(
+      choice.format,
+      entry
+    );
+
+    const saveUri = await vscode.window.showSaveDialog({
+      defaultUri,
+      filters: {
+        [choice.label]: [EXTENSIONS[choice.format]],
+      },
+    });
+
+    if (!saveUri) {
+      Logger.info('Report download cancelled by user.');
+      return;
+    }
+
+    // Make sure the parent directory exists.
+    const parentDirectory = vscode.Uri.file(
+      path.dirname(saveUri.fsPath)
+    );
+
+    try {
+      await vscode.workspace.fs.createDirectory(
+        parentDirectory
+      );
+    } catch (mkdirError) {
+      const message =
+        mkdirError instanceof Error
+          ? mkdirError.message
+          : String(mkdirError);
+
+      // Ignore "already exists".
+      if (!/already exists|file exists|EEXIST/i.test(message)) {
+        throw mkdirError;
+      }
+    }
+
+    // Write report.
+    await vscode.workspace.fs.writeFile(
+      saveUri,
+      Buffer.from(content, 'utf8')
+    );
+
+    Logger.info(
+      `Report written successfully: ${saveUri.fsPath}`
+    );
+
+    const openAction = 'Open Report';
+
+    const selection =
+      await vscode.window.showInformationMessage(
+        `SentriCodeX: ${choice.label} report saved successfully.`,
+        openAction
+      );
+
+    if (selection === openAction) {
+      if (choice.format === 'html') {
+        await vscode.env.openExternal(saveUri);
+      } else {
+        const document =
+          await vscode.workspace.openTextDocument(saveUri);
+
+        await vscode.window.showTextDocument(document);
+      }
+    }
+
+  } catch (err) {
+    const errorMessage =
+      err instanceof Error
+        ? `${err.name}: ${err.message}\n${err.stack ?? ''}`
+        : String(err);
+
+    Logger.error(
+      `Failed to generate/save ${choice.format} report:\n${errorMessage}`
+    );
+
+    void vscode.window.showErrorMessage(
+      `SentriCodeX: Failed to create ${choice.label} report. Check the SentriCodeX Output channel for details.`
+    );
   }
-} catch (err) {
-  const errorMessage =
-    err instanceof Error
-      ? err.message
-      : String(err);
-
-  Logger.error(
-    `Failed to save ${choice.format} report: ${errorMessage}`
-  );
-
-  void vscode.window.showErrorMessage(
-    `SentriCodeX: Failed to save ${choice.format} report. ${errorMessage}`
-  );
 }
-  }
 
   private async handleCompareReports(entryIds: [string, string]): Promise<void> {
     const [idA, idB] = entryIds;
