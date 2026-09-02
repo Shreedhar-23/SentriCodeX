@@ -101,201 +101,302 @@
   }
 
   function renderDiff() {
+    function renderDiff() {
 
-    /*
-     * Safely get findings from both scans.
-     * The ?? [] also supports older history entries
-     * that do not have suppressed_findings.
-     */
-    const beforeFindings =
-      before.findings ?? [];
-
-    const afterFindings =
-      after.findings ?? [];
-
-    const beforeSuppressed =
-      before.suppressed_findings ?? [];
-
-    const afterSuppressed =
-      after.suppressed_findings ?? [];
+  // Safely support old history entries that may not
+  // contain suppressed_findings.
+  const beforeFindings = before.findings ?? [];
+  const afterFindings = after.findings ?? [];
+  const afterSuppressed = after.suppressed_findings ?? [];
 
 
-    /*
-     * Fingerprints of active findings
-     * in the newer scan.
-     */
-    const afterActiveFingerprints =
-      new Set(
-        afterFindings.map(
-          (f) => f.fingerprint
-        )
+  // --------------------------------------------------
+  // EXACT FINGERPRINTS
+  // --------------------------------------------------
+
+  const beforeFingerprints = new Set(
+    beforeFindings.map((f) => f.fingerprint)
+  );
+
+  const afterFingerprints = new Set(
+    afterFindings.map((f) => f.fingerprint)
+  );
+
+  const afterSuppressedFingerprints = new Set(
+    afterSuppressed.map((f) => f.fingerprint)
+  );
+
+
+  // --------------------------------------------------
+  // STABLE IDENTITY
+  // --------------------------------------------------
+  //
+  // Fingerprints contain line/column.
+  // Adding a suppression comment above a finding
+  // can change the line number.
+  //
+  // Therefore we also compare:
+  //
+  // rule_id + file + title + description
+  //
+  // This lets us recognize the same finding even
+  // when its line number changed.
+  //
+
+  function stableFindingKey(finding) {
+    return [
+      finding.rule_id,
+      finding.file,
+      finding.title,
+      finding.description
+    ]
+      .map((value) => String(value ?? '').toLowerCase())
+      .join('|');
+  }
+
+
+  // --------------------------------------------------
+  // BUILD STABLE KEYS FOR NEW SUPPRESSED FINDINGS
+  // --------------------------------------------------
+
+  const suppressedStableKeys = new Set(
+    afterSuppressed.map(
+      (f) => stableFindingKey(f)
+    )
+  );
+
+
+  // --------------------------------------------------
+  // NEW FINDINGS
+  // --------------------------------------------------
+  //
+  // A finding is NEW only if it is not represented
+  // by an active finding from the previous scan.
+  //
+
+  const newFindings = afterFindings.filter(
+    (f) => {
+
+      if (beforeFingerprints.has(f.fingerprint)) {
+        return false;
+      }
+
+      const key = stableFindingKey(f);
+
+      return !beforeFindings.some(
+        (oldFinding) =>
+          stableFindingKey(oldFinding) === key
       );
+    }
+  );
 
 
-    /*
-     * Fingerprints of suppressed findings
-     * in the newer scan.
-     */
-    const afterSuppressedFingerprints =
-      new Set(
-        afterSuppressed.map(
-          (f) => f.fingerprint
+  // --------------------------------------------------
+  // SUPPRESSED FINDINGS
+  // --------------------------------------------------
+  //
+  // IMPORTANT:
+  //
+  // A finding from the old scan is SUPPRESSED if
+  // the same finding appears in the new scan's
+  // suppressed_findings.
+  //
+  // We first try fingerprint matching.
+  // Then we fall back to stable identity matching.
+  //
+
+  const suppressedFindings = beforeFindings.filter(
+    (oldFinding) => {
+
+      // Exact fingerprint match
+      if (
+        afterSuppressedFingerprints.has(
+          oldFinding.fingerprint
         )
-      );
+      ) {
+        return true;
+      }
+
+      // Stable identity match
+      const oldKey =
+        stableFindingKey(oldFinding);
+
+      return suppressedStableKeys.has(oldKey);
+    }
+  );
 
 
-    /*
-     * Fingerprints of active findings
-     * in the older scan.
-     */
-    const beforeActiveFingerprints =
-      new Set(
-        beforeFindings.map(
-          (f) => f.fingerprint
-        )
-      );
+  // --------------------------------------------------
+  // RESOLVED FINDINGS
+  // --------------------------------------------------
+  //
+  // A finding is RESOLVED only when it:
+  //
+  // 1. Is not active in the new scan
+  // AND
+  // 2. Is not suppressed in the new scan
+  //
+  // This is the important correction.
+  //
+
+  const suppressedStableKeySet =
+    new Set(
+      suppressedFindings.map(
+        (f) => stableFindingKey(f)
+      )
+    );
 
 
-    /*
-     * ------------------------------------
-     * NEW FINDINGS
-     * ------------------------------------
-     *
-     * Present in the new active scan
-     * but not in the old active scan.
-     */
-    const newFindings =
-      afterFindings.filter(
-        (f) =>
-          !beforeActiveFingerprints.has(
-            f.fingerprint
+  const resolvedFindings =
+    beforeFindings.filter(
+      (oldFinding) => {
+
+        // Still active
+        if (
+          afterFingerprints.has(
+            oldFinding.fingerprint
           )
-      );
+        ) {
+          return false;
+        }
 
-
-    /*
-     * ------------------------------------
-     * SUPPRESSED FINDINGS
-     * ------------------------------------
-     *
-     * Was active in the old scan,
-     * but is suppressed in the new scan.
-     */
-    const suppressedFindings =
-      beforeFindings.filter(
-        (f) =>
+        // Now suppressed
+        if (
           afterSuppressedFingerprints.has(
-            f.fingerprint
+            oldFinding.fingerprint
           )
-      );
+        ) {
+          return false;
+        }
 
-
-    /*
-     * ------------------------------------
-     * RESOLVED FINDINGS
-     * ------------------------------------
-     *
-     * Was active before and is completely
-     * absent from the new scan.
-     *
-     * IMPORTANT:
-     * If it exists in new suppressed findings,
-     * it is NOT resolved.
-     */
-    const resolvedFindings =
-      beforeFindings.filter(
-        (f) =>
-          !afterActiveFingerprints.has(
-            f.fingerprint
-          ) &&
-          !afterSuppressedFingerprints.has(
-            f.fingerprint
+        // Suppressed but line number changed
+        if (
+          suppressedStableKeySet.has(
+            stableFindingKey(oldFinding)
           )
-      );
+        ) {
+          return false;
+        }
+
+        // Truly gone
+        return true;
+      }
+    );
 
 
-    /*
-     * ------------------------------------
-     * UNCHANGED FINDINGS
-     * ------------------------------------
-     *
-     * Active in both scans.
-     */
-    const unchangedFindings =
-      afterFindings.filter(
-        (f) =>
-          beforeActiveFingerprints.has(
-            f.fingerprint
-          )
-      );
+  // --------------------------------------------------
+  // UNCHANGED
+  // --------------------------------------------------
 
+  const unchangedFindings =
+    afterFindings.filter(
+      (newFinding) =>
+        beforeFindings.some(
+          (oldFinding) => {
 
-    /*
-     * ------------------------------------
-     * SUPPRESSED FILE COUNT
-     * ------------------------------------
-     *
-     * Count unique files containing
-     * suppressed findings in the new scan.
-     */
-    const suppressedFileCount =
-      new Set(
-        afterSuppressed.map(
-          (f) => f.file
+            if (
+              oldFinding.fingerprint ===
+              newFinding.fingerprint
+            ) {
+              return true;
+            }
+
+            return (
+              stableFindingKey(oldFinding) ===
+              stableFindingKey(newFinding)
+            );
+          }
         )
-      ).size;
+    );
 
 
-    /*
-     * ------------------------------------
-     * UPDATE COUNTS
-     * ------------------------------------
-     */
+  // --------------------------------------------------
+  // SUPPRESSED FILE COUNT
+  // --------------------------------------------------
 
-    const newCount =
-      document.getElementById('newCount');
-
-    if (newCount) {
-      newCount.textContent =
-        String(newFindings.length);
-    }
+  const suppressedFileCount =
+    new Set(
+      suppressedFindings.map(
+        (f) => f.file
+      )
+    ).size;
 
 
-    const resolvedCount =
-      document.getElementById('resolvedCount');
+  // --------------------------------------------------
+  // UPDATE COUNTS
+  // --------------------------------------------------
 
-    if (resolvedCount) {
-      resolvedCount.textContent =
-        String(resolvedFindings.length);
-    }
+  const newCount =
+    document.getElementById('newCount');
 
-
-    const unchangedCount =
-      document.getElementById('unchangedCount');
-
-    if (unchangedCount) {
-      unchangedCount.textContent =
-        String(unchangedFindings.length);
-    }
+  if (newCount) {
+    newCount.textContent =
+      String(newFindings.length);
+  }
 
 
-    const suppressedCount =
-      document.getElementById('suppressedCount');
+  const resolvedCount =
+    document.getElementById('resolvedCount');
 
-    if (suppressedCount) {
-      suppressedCount.textContent =
-        String(suppressedFindings.length);
-    }
+  if (resolvedCount) {
+    resolvedCount.textContent =
+      String(resolvedFindings.length);
+  }
 
 
-    const suppressedFileCountElement =
-      document.getElementById(
-        'suppressedFileCount'
-      );
+  const unchangedCount =
+    document.getElementById('unchangedCount');
 
-    if (suppressedFileCountElement) {
-      suppressedFileCountElement.textContent =
-        String(suppressedFileCount);
+  if (unchangedCount) {
+    unchangedCount.textContent =
+      String(unchangedFindings.length);
+  }
+
+
+  const suppressedCount =
+    document.getElementById('suppressedCount');
+
+  if (suppressedCount) {
+    suppressedCount.textContent =
+      String(suppressedFindings.length);
+  }
+
+
+  const suppressedFileCountElement =
+    document.getElementById(
+      'suppressedFileCount'
+    );
+
+  if (suppressedFileCountElement) {
+    suppressedFileCountElement.textContent =
+      String(suppressedFileCount);
+  }
+
+
+  // --------------------------------------------------
+  // RENDER LISTS
+  // --------------------------------------------------
+
+  renderFindingList(
+    'newFindingsList',
+    newFindings,
+    'No new findings.'
+  );
+
+
+  renderFindingList(
+    'resolvedFindingsList',
+    resolvedFindings,
+    'No findings were resolved.'
+  );
+
+
+  renderFindingList(
+    'suppressedFindingsList',
+    suppressedFindings,
+    'No findings were suppressed.'
+  );
+}
     }
 
 
