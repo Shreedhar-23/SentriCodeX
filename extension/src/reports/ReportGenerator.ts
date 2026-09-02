@@ -9,6 +9,7 @@ export class ReportGenerator {
 
     const findings = result.findings ?? [];
     const suppressedFindings = result.suppressed_findings ?? [];
+    const suppressedFileCount = getSuppressedFileCount(result); 
 
     const lines: string[] = [];
     lines.push('# SentriCodeX Security Report', '');
@@ -19,6 +20,15 @@ export class ReportGenerator {
     lines.push(`**Security Score:** ${result.security_score}/100`, '');
     lines.push('## Summary', '', '| Metric | Count |', '|---|---|', `| Active Findings | ${findings.length} |`, `| Suppressed Findings | ${suppressedFindings.length} |`, `| Total Detected | ${findings.length + suppressedFindings.length} |`, '');
     lines.push('| Severity | Active Count |'); lines.push('|---|---|');
+    lines.push(
+  '| Suppressed Findings | Count |',
+  '|---|---|',
+  `| Active Findings | ${findings.length} |`,
+  `| Suppressed Findings | ${suppressedFindings.length} |`,
+  `| Suppressed Files | ${suppressedFileCount} |`,
+  `| Total Detected | ${findings.length + suppressedFindings.length} |`,
+  ''
+);
     for (const severity of SEVERITY_ORDER) lines.push(`| ${capitalize(severity)} | ${result.summary.severity_breakdown[severity] ?? 0} |`);
     lines.push('');
     lines.push('## Active Findings', '');
@@ -41,13 +51,15 @@ export class ReportGenerator {
 
     const findings = result.findings ?? [];
     const suppressedFindings = result.suppressed_findings ?? [];
+    const suppressedFileCount = getSuppressedFileCount(result);
 
     const activeRows = findings.length ? sortBySeverity(findings).map(renderFindingRow).join('\n') : `<tr><td colspan="6" class="empty">${suppressedFindings.length ? 'No active findings.' : 'No findings. Great work!'}</td></tr>`;
     const suppressedRows = suppressedFindings.length ? sortBySeverity(suppressedFindings).map(renderSuppressedRow).join('\n') : '<tr><td colspan="6" class="empty">No suppressed findings.</td></tr>';
     const summaryCards = SEVERITY_ORDER.map(s => `<div class="card card-${s}"><div class="count">${result.summary.severity_breakdown[s] ?? 0}</div><div class="label">${capitalize(s)}</div></div>`).join('');
     return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><title>SentriCodeX Security Report</title><style>
 body{font-family:-apple-system,Segoe UI,sans-serif;margin:0;padding:32px;background:#1e1e1e;color:#ddd}h1{margin-bottom:4px}.meta{color:#999;font-size:13px;margin-bottom:24px}.score{font-size:40px;font-weight:700}.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:24px 0}.card{border:1px solid #444;border-left:4px solid #888;border-radius:4px;padding:10px 14px}.card-critical{border-left-color:#e51400}.card-high{border-left-color:#f14c4c}.card-medium{border-left-color:#e9a700}.card-low{border-left-color:#3794ff}.card-informational{border-left-color:#8a8a8a}.card .count{font-size:22px;font-weight:700}.card .label{font-size:11px;color:#999}.summary-strip{display:flex;gap:12px;margin:18px 0 30px}.summary-pill{border:1px solid #444;border-radius:6px;padding:12px 16px}.summary-pill strong{display:block;font-size:20px}.summary-pill span{font-size:11px;color:#999}section{margin-top:30px}h2{font-size:18px}table{width:100%;border-collapse:collapse;margin-top:16px;font-size:13px}th,td{text-align:left;padding:8px;border-bottom:1px solid #333;vertical-align:top}th{color:#999;text-transform:uppercase;font-size:11px}.badge{padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;color:#fff;text-transform:capitalize}.badge-critical{background:#e51400}.badge-high{background:#f14c4c}.badge-medium{background:#e9a700}.badge-low{background:#3794ff}.badge-informational{background:#8a8a8a}.suppressed-section{border-top:1px solid #444;padding-top:12px}.suppressed-row{opacity:.82}.suppression{font-family:monospace;font-size:12px;background:#2b2b2b;border-radius:4px;padding:4px 6px;display:inline-block}.empty{text-align:center;padding:24px;color:#999}footer{margin-top:32px;color:#666;font-size:12px}</style></head><body>
-<h1>SentriCodeX Security Report</h1><p class="meta"><strong>${escapeHtml(result.target)}</strong><br/>Scanned ${result.scanned_at} &middot; ${result.files_scanned} file(s) &middot; ${result.duration_ms}ms</p><div class="score">Security Score: ${result.security_score}/100</div><div class="cards">${summaryCards}</div><div class="summary-strip"><div class="summary-pill"><strong>${findings.length}</strong><span>Active Findings</span></div><div class="summary-pill"><strong>${suppressedFindings.length}</strong><span>Suppressed Findings</span></div><div class="summary-pill"><strong>${findings.length + suppressedFindings.length}</strong><span>Total Detected</span></div></div>
+<h1>SentriCodeX Security Report</h1><p class="meta"><strong>${escapeHtml(result.target)}</strong><br/>Scanned ${result.scanned_at} &middot; ${result.files_scanned} file(s) &middot; ${result.duration_ms}ms</p><div class="score">Security Score: ${result.security_score}/100</div><div class="cards">${summaryCards}</div><div class="summary-strip"><div class="summary-pill"><strong>${findings.length}</strong><span>Active Findings</span></div><div class="summary-pill"><strong>${suppressedFindings.length}</strong><span>Suppressed Findings</span></div><div class="summary-pill">
+<strong>${suppressedFileCount}</strong><span>Suppressed Files</span>div><div class="summary-pill"><strong>${findings.length + suppressedFindings.length}</strong><span>Total Detected</span></div></div>
 <section><h2>Active Findings</h2><table><thead><tr><th>Severity</th><th>Rule ID</th><th>File</th><th>Line</th><th>Description</th><th>Recommendation</th></tr></thead><tbody>${activeRows}</tbody></table></section>
 <section class="suppressed-section"><h2>Suppressed Findings (${suppressedFindings.length})</h2><p>These findings were detected but excluded from the active security results by an explicit SentriCodeX suppression comment.</p><table><thead><tr><th>Severity</th><th>Rule ID</th><th>File</th><th>Line</th><th>Description</th><th>Suppression</th></tr></thead><tbody>${suppressedRows}</tbody></table></section>
 <footer>Generated by SentriCodeX &mdash; local-first static security analysis.</footer></body></html>`;
@@ -71,4 +83,10 @@ function escapeMarkdownCell(value: unknown): string {
   return String(value ?? '')
     .replace(/\|/g, '\\|')
     .replace(/\r?\n/g, ' ');
+}
+
+function getSuppressedFileCount(result: ScanResult): number {
+  return new Set(
+    (result.suppressed_findings ?? []).map(f => f.file)
+  ).size;
 }

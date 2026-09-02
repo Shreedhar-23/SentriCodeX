@@ -3,7 +3,7 @@ from sentricodex.suppressions import is_suppressed
 
 def test_inline_rule_specific_suppression():
     lines = [
-        'password = "demo"  # sentricodex: ignore SCX-SECRET-003',
+        'password = "demo"  # sentricodex: ignore SCX-SECRET-003',  #sentricodex: ignore SCX-SECRET-001
     ]
     assert is_suppressed(lines, 1, "SCX-SECRET-003")
     assert not is_suppressed(lines, 1, "SCX-SECRET-004")

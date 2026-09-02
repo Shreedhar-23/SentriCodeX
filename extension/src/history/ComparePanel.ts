@@ -123,6 +123,27 @@ export class ComparePanel {
     </section>
 
     <section class="diff-section">
+  <h2>
+    Suppressed Findings
+    <span class="count-badge" id="suppressedCount"></span>
+  </h2>
+
+  <p class="section-hint">
+    Findings that were active in the older scan but are suppressed in the newer scan.
+  </p>
+
+  <p class="section-hint">
+    Suppressed Files:
+    <strong id="suppressedFileCount">0</strong>
+  </p>
+
+  <ul
+    class="finding-diff-list"
+    id="suppressedFindingsList">
+  </ul>
+</section>
+
+    <section class="diff-section">
       <h2>Unchanged <span class="count-badge" id="unchangedCount"></span></h2>
       <p class="section-hint">Present in both scans.</p>
     </section>
