@@ -152,19 +152,25 @@
 
   function getKey(finding) {
 
-    return [
-      finding.rule_id,
-      finding.file,
-      finding.title,
-      finding.description
-    ]
-      .map(function (value) {
-        return String(value || '')
-          .toLowerCase()
-          .trim();
-      })
-      .join('|');
+  if (!finding) {
+    return '';
   }
+
+  const ruleId =
+    String(finding.rule_id || '').toLowerCase().trim();
+
+  const file =
+    String(finding.file || '').toLowerCase().trim();
+
+  /*
+   * Do NOT use line or column here.
+   *
+   * A suppression comment can move the finding
+   * to another line.
+   */
+
+  return ruleId + '|' + file;
+}
 
 
   function renderDiff() {
@@ -223,52 +229,79 @@
 
     // SUPPRESSED
     const suppressedFindings =
-      beforeFindings.filter(function (oldFinding) {
+  beforeFindings.filter(function (oldFinding) {
 
-        if (
-          afterSuppressedFingerprintSet.has(
-            oldFinding.fingerprint
-          )
-        ) {
-          return true;
-        }
+    // 1. Exact fingerprint match
+    if (
+      afterSuppressedFingerprintSet.has(
+        oldFinding.fingerprint
+      )
+    ) {
+      return true;
+    }
 
-        return afterSuppressedKeySet.has(
-          getKey(oldFinding)
-        );
-      });
+    // 2. Rule + file fallback match
+    const oldKey = getKey(oldFinding);
+
+    return afterSuppressed.some(function (suppressedFinding) {
+
+      return getKey(suppressedFinding) === oldKey;
+
+    });
+  });
 
 
     // RESOLVED
     const resolvedFindings =
-      beforeFindings.filter(function (oldFinding) {
+  beforeFindings.filter(function (oldFinding) {
 
-        if (
-          afterFingerprintSet.has(
-            oldFinding.fingerprint
-          )
-        ) {
-          return false;
-        }
+    // Still active in the new scan
+    if (
+      afterFindings.some(function (newFinding) {
 
-        if (
-          afterSuppressedFingerprintSet.has(
-            oldFinding.fingerprint
-          )
-        ) {
-          return false;
-        }
+        return (
+          newFinding.fingerprint ===
+          oldFinding.fingerprint
+        );
+      })
+    ) {
+      return false;
+    }
 
-        if (
-          afterSuppressedKeySet.has(
-            getKey(oldFinding)
-          )
-        ) {
-          return false;
-        }
 
-        return true;
-      });
+    // Suppressed in the new scan
+    if (
+      afterSuppressed.some(function (suppressedFinding) {
+
+        return (
+          suppressedFinding.fingerprint ===
+          oldFinding.fingerprint
+        );
+
+      })
+    ) {
+      return false;
+    }
+
+
+    // Suppressed with changed line/fingerprint
+    if (
+      afterSuppressed.some(function (suppressedFinding) {
+
+        return (
+          getKey(suppressedFinding) ===
+          getKey(oldFinding)
+        );
+
+      })
+    ) {
+      return false;
+    }
+
+
+    // Only now is it truly resolved
+    return true;
+  });
 
 
     // UNCHANGED
