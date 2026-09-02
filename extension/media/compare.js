@@ -174,6 +174,20 @@
 
 
   function renderDiff() {
+    console.log(
+  'BEFORE FINDINGS:',
+  beforeFindings
+);
+
+console.log(
+  'AFTER FINDINGS:',
+  afterFindings
+);
+
+console.log(
+  'AFTER SUPPRESSED:',
+  afterSuppressed
+);
 
     const beforeFingerprintSet =
       new Set(
