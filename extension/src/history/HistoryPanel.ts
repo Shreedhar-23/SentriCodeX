@@ -161,40 +161,78 @@ export class HistoryPanel {
     }
 
     const content = this.renderReport(choice.format, entry.result);
-    const defaultUri = this.buildDefaultUri(choice.format, entry);
+const defaultUri = this.buildDefaultUri(choice.format, entry);
 
-    const saveUri = await vscode.window.showSaveDialog({
-      defaultUri,
-      filters: { [choice.label]: [EXTENSIONS[choice.format]] },
-    });
-    if (!saveUri) {
-      return;
+const saveUri = await vscode.window.showSaveDialog({
+  defaultUri,
+  filters: {
+    [choice.label]: [EXTENSIONS[choice.format]],
+  },
+});
+
+if (!saveUri) {
+  return;
+}
+
+try {
+  // Make sure the parent directory exists.
+  const parentDir = vscode.Uri.file(path.dirname(saveUri.fsPath));
+
+  try {
+    await vscode.workspace.fs.createDirectory(parentDir);
+  } catch (mkdirError) {
+    // Directory may already exist. Ignore that case.
+    const message =
+      mkdirError instanceof Error
+        ? mkdirError.message
+        : String(mkdirError);
+
+    if (!/already exists|file exists|EEXIST/i.test(message)) {
+      throw mkdirError;
     }
+  }
 
-    try {
-      await vscode.workspace.fs.writeFile(saveUri, Buffer.from(content, 'utf8'));
-      Logger.info(`Report written to: ${saveUri.fsPath}`);
+  // Convert the generated report into UTF-8 bytes.
+  const data = Buffer.from(content, 'utf8');
 
-      const openAction = 'Open Report';
-      const selection = await vscode.window.showInformationMessage(
-        `SentriCodeX: Report saved to ${path.basename(saveUri.fsPath)}.`,
-        openAction
-      );
+  // Write the report.
+  await vscode.workspace.fs.writeFile(saveUri, data);
 
-      if (selection === openAction) {
-        if (choice.format === 'html') {
-          void vscode.env.openExternal(saveUri);
-        } else {
-          const doc = await vscode.workspace.openTextDocument(saveUri);
-          void vscode.window.showTextDocument(doc);
-        }
-      }
-    } catch (err) {
-      Logger.error('Failed to write report', err);
-      void vscode.window.showErrorMessage(
-        `SentriCodeX: Failed to save report. ${err instanceof Error ? err.message : String(err)}`
-      );
+  Logger.info(
+    `Report written successfully: ${saveUri.fsPath}`
+  );
+
+  const openAction = 'Open Report';
+
+  const selection = await vscode.window.showInformationMessage(
+    `SentriCodeX: Report saved to ${saveUri.fsPath}`,
+    openAction
+  );
+
+  if (selection === openAction) {
+    if (choice.format === 'html') {
+      await vscode.env.openExternal(saveUri);
+    } else {
+      const document =
+        await vscode.workspace.openTextDocument(saveUri);
+
+      await vscode.window.showTextDocument(document);
     }
+  }
+} catch (err) {
+  const errorMessage =
+    err instanceof Error
+      ? err.message
+      : String(err);
+
+  Logger.error(
+    `Failed to save ${choice.format} report: ${errorMessage}`
+  );
+
+  void vscode.window.showErrorMessage(
+    `SentriCodeX: Failed to save ${choice.format} report. ${errorMessage}`
+  );
+}
   }
 
   private async handleCompareReports(entryIds: [string, string]): Promise<void> {

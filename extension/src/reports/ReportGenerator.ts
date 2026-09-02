@@ -58,6 +58,7 @@ function escapeHtml(value: unknown): string {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
+
 function escapeMarkdownCell(value: unknown): string {
   return String(value ?? '')
     .replace(/\|/g, '\\|')
