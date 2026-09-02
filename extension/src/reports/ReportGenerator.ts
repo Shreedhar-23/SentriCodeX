@@ -50,5 +50,16 @@ function renderFindingRow(f: Finding): string { return `<tr><td><span class="bad
 function renderSuppressedRow(f: SuppressedFinding): string { return `<tr class="suppressed-row"><td><span class="badge badge-${f.severity}">${f.severity}</span></td><td>${escapeHtml(f.rule_id)}</td><td>${escapeHtml(f.file)}</td><td>${f.line}</td><td>${escapeHtml(f.description)}</td><td><span class="suppression">${escapeHtml(f.suppression_comment)}</span><br/><small>${escapeHtml(f.suppression_type)} suppression</small></td></tr>`; }
 function sortBySeverity<T extends Finding>(findings: T[]): T[] { const rank = Object.fromEntries(SEVERITY_ORDER.map((s,i)=>[s,i])); return [...findings].sort((a,b)=>rank[a.severity]-rank[b.severity]); }
 function capitalize(value:string):string{return value.charAt(0).toUpperCase()+value.slice(1)}
-function escapeHtml(value:string):string{return value.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
-function escapeMarkdownCell(value:string):string{return value.replace(/\|/g,'\\|').replace(/\n/g,' ')}
+function escapeHtml(value: unknown): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+function escapeMarkdownCell(value: unknown): string {
+  return String(value ?? '')
+    .replace(/\|/g, '\\|')
+    .replace(/\r?\n/g, ' ');
+}
