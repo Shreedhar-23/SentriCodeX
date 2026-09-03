@@ -173,227 +173,78 @@
 }
 
 
-  function renderDiff() {
-    console.log(
-  'BEFORE FINDINGS:',
-  beforeFindings
-);
+function renderDiff() {
+    const beforeActive = before.findings || [];
+    const afterActive = after.findings || [];
 
-console.log(
-  'AFTER FINDINGS:',
-  afterFindings
-);
+    const beforeSuppressed = before.suppressed_findings || [];
+    const afterSuppressed = after.suppressed_findings || [];
 
-console.log(
-  'AFTER SUPPRESSED:',
-  afterSuppressed
-);
+    console.log('BEFORE ACTIVE:', beforeActive);
+    console.log('BEFORE SUPPRESSED:', beforeSuppressed);
+    console.log('AFTER ACTIVE:', afterActive);
+    console.log('AFTER SUPPRESSED:', afterSuppressed);
 
-    const beforeFingerprintSet =
-      new Set(
-        beforeFindings.map(function (f) {
-          return f.fingerprint;
-        })
-      );
+    // All findings that existed in each scan, whether active or suppressed.
+    const beforeAll = [...beforeActive, ...beforeSuppressed];
+    const afterAll = [...afterActive, ...afterSuppressed];
 
-
-    const afterFingerprintSet =
-      new Set(
-        afterFindings.map(function (f) {
-          return f.fingerprint;
-        })
-      );
-
-
-    const afterSuppressedFingerprintSet =
-      new Set(
-        afterSuppressed.map(function (f) {
-          return f.fingerprint;
-        })
-      );
-
-
-    const afterSuppressedKeySet =
-      new Set(
-        afterSuppressed.map(function (f) {
-          return getKey(f);
-        })
-      );
-
-
-    // NEW
-    const newFindings =
-      afterFindings.filter(function (finding) {
-
-        if (
-          beforeFingerprintSet.has(
-            finding.fingerprint
-          )
-        ) {
-          return false;
-        }
-
-        const key = getKey(finding);
-
-        return !beforeFindings.some(function (oldFinding) {
-          return getKey(oldFinding) === key;
-        });
-      });
-
-
-    // SUPPRESSED
-    const suppressedFindings =
-  beforeFindings.filter(function (oldFinding) {
-
-    // 1. Exact fingerprint match
-    if (
-      afterSuppressedFingerprintSet.has(
-        oldFinding.fingerprint
-      )
-    ) {
-      return true;
-    }
-
-    // 2. Rule + file fallback match
-    const oldKey = getKey(oldFinding);
-
-    return afterSuppressed.some(function (suppressedFinding) {
-
-      return getKey(suppressedFinding) === oldKey;
-
-    });
-  });
-
-
-    // RESOLVED
-    const resolvedFindings =
-  beforeFindings.filter(function (oldFinding) {
-
-    // Still active in the new scan
-    if (
-      afterFindings.some(function (newFinding) {
-
-        return (
-          newFinding.fingerprint ===
-          oldFinding.fingerprint
-        );
-      })
-    ) {
-      return false;
-    }
-
-
-    // Suppressed in the new scan
-    if (
-      afterSuppressed.some(function (suppressedFinding) {
-
-        return (
-          suppressedFinding.fingerprint ===
-          oldFinding.fingerprint
-        );
-
-      })
-    ) {
-      return false;
-    }
-
-
-    // Suppressed with changed line/fingerprint
-    if (
-      afterSuppressed.some(function (suppressedFinding) {
-
-        return (
-          getKey(suppressedFinding) ===
-          getKey(oldFinding)
-        );
-
-      })
-    ) {
-      return false;
-    }
-
-
-    // Only now is it truly resolved
-    return true;
-  });
-
-
-    // UNCHANGED
-    const unchangedFindings =
-      afterFindings.filter(function (newFinding) {
-
-        return beforeFindings.some(function (oldFinding) {
-
-          if (
-            oldFinding.fingerprint ===
-            newFinding.fingerprint
-          ) {
-            return true;
-          }
-
-          return (
-            getKey(oldFinding) ===
-            getKey(newFinding)
-          );
-        });
-      });
-
-
-    // SUPPRESSED FILES
-    const suppressedFiles =
-      new Set(
-        suppressedFindings.map(function (finding) {
-          return finding.file;
-        })
-      );
-
-
-    setText(
-      'newCount',
-      newFindings.length
+    const beforeFingerprints = new Set(
+        beforeAll.map((f) => f.fingerprint)
     );
 
-    setText(
-      'resolvedCount',
-      resolvedFindings.length
+    const afterFingerprints = new Set(
+        afterAll.map((f) => f.fingerprint)
     );
 
-    setText(
-      'unchangedCount',
-      unchangedFindings.length
+    // New = did not exist at all in the previous scan.
+    const newFindings = afterActive.filter(
+        (f) => !beforeFingerprints.has(f.fingerprint)
     );
 
-    setText(
-      'suppressedCount',
-      suppressedFindings.length
+    // Resolved = existed before and does not exist at all in the new scan.
+    const resolvedFindings = beforeActive.filter(
+        (f) => !afterFingerprints.has(f.fingerprint)
     );
 
-    setText(
-      'suppressedFileCount',
-      suppressedFiles.size
+    // Suppressed = exists in the new scan's suppressed findings.
+    const suppressedFindings = afterSuppressed;
+
+    // Unchanged = active finding exists in both scans.
+    const unchangedFindings = afterActive.filter(
+        (f) => beforeFingerprints.has(f.fingerprint)
     );
 
+    document.getElementById('newCount').textContent =
+        String(newFindings.length);
+
+    document.getElementById('resolvedCount').textContent =
+        String(resolvedFindings.length);
+
+    document.getElementById('suppressedCount').textContent =
+        String(suppressedFindings.length);
+
+    document.getElementById('unchangedCount').textContent =
+        String(unchangedFindings.length);
 
     renderFindingList(
-      'newFindingsList',
-      newFindings,
-      'No new findings.'
+        'newFindingsList',
+        newFindings,
+        'No new findings.'
     );
-
 
     renderFindingList(
-      'resolvedFindingsList',
-      resolvedFindings,
-      'No findings were resolved.'
+        'resolvedFindingsList',
+        resolvedFindings,
+        'No findings were resolved.'
     );
-
 
     renderFindingList(
-      'suppressedFindingsList',
-      suppressedFindings,
-      'No findings were suppressed.'
+        'suppressedFindingsList',
+        suppressedFindings,
+        'No findings were suppressed.'
     );
-  }
+}
 
 
   function setText(id, value) {
