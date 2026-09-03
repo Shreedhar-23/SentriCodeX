@@ -12,6 +12,7 @@ about the others.
 
 from __future__ import annotations
 
+from re import match
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -19,13 +20,19 @@ from pathlib import Path
 from sentricodex.exceptions import ScannerError
 from sentricodex.file_collector import FileCollector
 from sentricodex.logger import get_logger
-from sentricodex.models import Finding, ScanResult, ScanSummary, Severity
+from sentricodex.models import (
+    Finding,
+    ScanResult,
+    ScanSummary,
+    Severity,
+    SuppressedFinding,
+)
 from sentricodex.normalizer import FindingNormalizer
 from sentricodex.parser import SourceParser
 from sentricodex.rule_executor import RuleExecutor
 from sentricodex.rule_loader import load_default_registry
 from sentricodex.scoring import calculate_security_score
-from sentricodex.suppressions import is_suppressed
+from sentricodex.suppressions import get_suppression
 
 logger = get_logger()
 
@@ -57,7 +64,7 @@ class Scanner:
 
         scanned_files = self._collector.collect(resolved_target)
         all_findings: list[Finding] = []
-
+        suppressed_findings: list[SuppressedFinding] = []
         for scanned_file in scanned_files:
             try:
                 parsed_source = self._parser.parse(scanned_file)
@@ -67,19 +74,56 @@ class Scanner:
                 continue
 
             raw_matches = self._executor.execute(parsed_source)
-            unsuppressed_matches = [
-                match
-                for match in raw_matches
-                if not is_suppressed(parsed_source.lines, match.line, match.rule_id)
-            ]
-            suppressed_count = len(raw_matches) - len(unsuppressed_matches)
-            if suppressed_count:
-                logger.info(
-                    f"Suppressed {suppressed_count} finding(s) in {scanned_file.path}"
+
+            unsuppressed_matches = []
+            suppressed_matches = []
+
+            for match in raw_matches:
+                suppression = get_suppression(
+                    parsed_source.lines,
+                    match.line,
+                    match.rule_id,
                 )
+
+            if suppression is not None:
+                suppressed_matches.append(
+                    (match, suppression)
+                )
+            else:
+                unsuppressed_matches.append(match)
+
+            if suppressed_matches:
+                logger.info(
+                    f"Suppressed {len(suppressed_matches)} finding(s) "
+                    f"in {scanned_file.path}"
+                )
+
             all_findings.extend(
-                self._normalizer.normalize(scanned_file.path, unsuppressed_matches)
+                self._normalizer.normalize(
+                    scanned_file.path,
+                    unsuppressed_matches,
+                )
             )
+
+            normalized_suppressed = self._normalizer.normalize(
+                scanned_file.path,
+                [match for match, _ in suppressed_matches],
+            )
+
+            for finding, (_, suppression) in zip(
+                normalized_suppressed,
+                suppressed_matches,
+            ):
+                suppression_type, suppression_comment = suppression
+
+                suppressed_findings.append(
+                    SuppressedFinding(
+                        **finding.__dict__,
+                        suppressed=True,
+                        suppression_type=suppression_type,
+                        suppression_comment=suppression_comment,
+                    )
+                )
 
         summary = self._build_summary(len(scanned_files), all_findings)
         duration_ms = round((time.perf_counter() - start_time) * 1000)
@@ -90,6 +134,7 @@ class Scanner:
             target=str(resolved_target),
             files_scanned=len(scanned_files),
             findings=all_findings,
+            suppressed_findings=suppressed_findings,
             summary=summary,
             security_score=calculate_security_score(all_findings),
             duration_ms=duration_ms,
@@ -97,7 +142,9 @@ class Scanner:
 
         logger.info(
             f"Scan complete: {len(scanned_files)} file(s) scanned, "
-            f"{len(all_findings)} finding(s), score {result.security_score}, "
+            f"{len(all_findings)} active finding(s), "
+            f"{len(suppressed_findings)} suppressed finding(s), "
+            f"score {result.security_score}, "
             f"{duration_ms}ms."
         )
         return result

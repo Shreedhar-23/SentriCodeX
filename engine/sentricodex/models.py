@@ -108,7 +108,24 @@ class Finding:
             "recommendation": self.recommendation,
             "fingerprint": self.fingerprint,
         }
+        
+@dataclass(frozen=True)
+class SuppressedFinding(Finding):
+    """A finding that was detected but suppressed by a source comment."""
 
+    suppression_type: str
+    suppression_comment: str
+
+    def to_dict(self) -> dict[str, Any]:
+        data = super().to_dict()
+        data.update(
+            {
+                "suppressed": True,
+                "suppression_type": self.suppression_type,
+                "suppression_comment": self.suppression_comment,
+            }
+        )
+        return data
 
 @dataclass(frozen=True)
 class ScannedFile:
@@ -157,6 +174,7 @@ class ScanResult:
     target: str
     files_scanned: int
     findings: list[Finding]
+    suppressed_findings: list[SuppressedFinding]
     summary: ScanSummary
     security_score: int
     duration_ms: int
@@ -168,6 +186,9 @@ class ScanResult:
             "target": self.target,
             "files_scanned": self.files_scanned,
             "findings": [finding.to_dict() for finding in self.findings],
+            "suppressed_findings": [
+                finding.to_dict() for finding in self.suppressed_findings
+            ],
             "summary": self.summary.to_dict(),
             "security_score": self.security_score,
             "duration_ms": self.duration_ms,

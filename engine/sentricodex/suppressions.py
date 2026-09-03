@@ -29,30 +29,43 @@ def _matches_rule(rule: str | None, rule_id: str) -> bool:
     return rule.casefold() == rule_id.casefold()
 
 
-def is_suppressed(lines: list[str], finding_line: int, rule_id: str) -> bool:
-    """Return True when a finding is suppressed by an inline/file comment.
+def get_suppression(
+    lines: list[str],
+    finding_line: int,
+    rule_id: str,
+) -> tuple[str, str] | None:
+    """Return suppression type and comment for a suppressed finding."""
 
-    ``finding_line`` is one-based, matching RawMatch/normalized Finding lines.
-    Invalid/out-of-range line numbers simply produce no suppression.
-    """
     if finding_line < 1 or finding_line > len(lines):
-        return False
+        return None
 
-    # File-level suppression: a matching ignore-file marker anywhere in the
-    # source applies to the complete file.
+    # File-level suppression.
     for line in lines:
         for match in _MARKER_RE.finditer(line):
-            if match.group("kind").casefold() == "ignore-file" and _matches_rule(
-                match.group("rule"), rule_id
+            if (
+                match.group("kind").casefold() == "ignore-file"
+                and _matches_rule(match.group("rule"), rule_id)
             ):
-                return True
+                return ("file", line.strip())
 
-    # Inline suppression: only the finding's own source line is affected.
+    # Line-level suppression.
     source_line = lines[finding_line - 1]
-    for match in _MARKER_RE.finditer(source_line):
-        if match.group("kind").casefold() == "ignore" and _matches_rule(
-            match.group("rule"), rule_id
-        ):
-            return True
 
-    return False
+    for match in _MARKER_RE.finditer(source_line):
+        if (
+            match.group("kind").casefold() == "ignore"
+            and _matches_rule(match.group("rule"), rule_id)
+        ):
+            return ("line", source_line.strip())
+
+    return None
+
+
+def is_suppressed(
+    lines: list[str],
+    finding_line: int,
+    rule_id: str,
+) -> bool:
+    """Backward-compatible boolean suppression check."""
+
+    return get_suppression(lines, finding_line, rule_id) is not None
