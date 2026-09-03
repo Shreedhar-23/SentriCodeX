@@ -85,12 +85,12 @@ class Scanner:
                     match.rule_id,
                 )
 
-            if suppression is not None:
-                suppressed_matches.append(
-                    (match, suppression)
-                )
-            else:
-                unsuppressed_matches.append(match)
+                if suppression is not None:
+                    suppressed_matches.append(
+                        (match, suppression)
+                    )
+                else:
+                    unsuppressed_matches.append(match)
 
             if suppressed_matches:
                 logger.info(
@@ -119,7 +119,6 @@ class Scanner:
                 suppressed_findings.append(
                     SuppressedFinding(
                         **finding.__dict__,
-                        suppressed=True,
                         suppression_type=suppression_type,
                         suppression_comment=suppression_comment,
                     )
