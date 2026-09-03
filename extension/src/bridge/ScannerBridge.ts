@@ -93,9 +93,13 @@ export class ScannerBridge {
   }
 
   private parseResult(stdout: string): ScanResult {
-    try {
-      return parseScanResult(stdout);
-    } catch (err) {
+  try {
+    const result = parseScanResult(stdout);
+
+    console.log('SCANNER BRIDGE SUPPRESSED:', result.suppressed_findings);
+
+    return result;
+  } catch (err) {
       Logger.error('Failed to parse scan result JSON', err);
       throw new ScannerBridgeError(
         'The scan completed but its output could not be parsed. See the ' +
