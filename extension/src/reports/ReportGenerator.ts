@@ -18,7 +18,7 @@ export class ReportGenerator {
     lines.push(`**Files scanned:** ${result.files_scanned}`);
     lines.push(`**Duration:** ${result.duration_ms}ms`);
     lines.push(`**Security Score:** ${result.security_score}/100`, '');
-    lines.push('## Summary', '', '| Metric | Count |', '|---|---|', `| Active Findings | ${findings.length} |`, `| Suppressed Findings | ${suppressedFindings.length} |`, `| Total Detected | ${findings.length + suppressedFindings.length} |`, '');
+    lines.push('## Summary');
     lines.push(
   '| Metric | Count |',
   '|---|---|',
