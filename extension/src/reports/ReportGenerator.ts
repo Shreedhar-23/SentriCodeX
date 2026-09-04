@@ -19,9 +19,8 @@ export class ReportGenerator {
     lines.push(`**Duration:** ${result.duration_ms}ms`);
     lines.push(`**Security Score:** ${result.security_score}/100`, '');
     lines.push('## Summary', '', '| Metric | Count |', '|---|---|', `| Active Findings | ${findings.length} |`, `| Suppressed Findings | ${suppressedFindings.length} |`, `| Total Detected | ${findings.length + suppressedFindings.length} |`, '');
-    lines.push('| Severity | Active Count |'); lines.push('|---|---|');
     lines.push(
-  '| Suppressed Findings | Count |',
+  '| Metric | Count |',
   '|---|---|',
   `| Active Findings | ${findings.length} |`,
   `| Suppressed Findings | ${suppressedFindings.length} |`,
