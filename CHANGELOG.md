@@ -66,3 +66,36 @@ packaged, installable extension.
 - Phase 9: Marketplace assets — icon, banner, expanded keywords, and
   publishing documentation.
 - Phase 10: CI/CD workflow, rule-authoring guide.
+
+## [1.1.1] - 2026-09-05
+
+### Added
+- Added support for suppressed findings using SentriCodeX suppression comments.
+- Added separate tracking of active and suppressed findings.
+- Added suppressed findings to scan results and scan history.
+- Added suppressed findings section to generated HTML security reports.
+- Added suppressed findings information to Markdown reports.
+- Added suppressed file count to security reports.
+- Added total detected findings information to reports.
+- Added suppressed findings count to the comparison panel.
+
+### Improved
+- Improved scan comparison so suppressed findings are not incorrectly reported as resolved.
+- Improved comparison logic to distinguish between active, suppressed, new, resolved, and unchanged findings.
+- Improved security score calculation to use active findings only.
+- Improved HTML report table layout to prevent overlapping columns.
+- Improved report readability and formatting for long file paths, descriptions, and recommendations.
+- Improved handling of suppression information between the Python scanner and VS Code extension.
+- Improved report summary with clearer active and suppressed finding statistics.
+
+### Fixed
+- Fixed suppressed findings being lost or incorrectly classified during scan comparison.
+- Fixed report layout issues caused by long finding descriptions and file paths.
+- Fixed HTML report markup/layout issues in the suppressed-files summary.
+- Fixed dashboard/comparison handling of suppressed finding data.
+
+### Security
+- Suppressed findings remain recorded separately rather than being silently discarded.
+- Security reports continue to avoid exposing sensitive secret values.
+- Suppression affects active finding results and security scoring without removing the underlying detection information.
+
